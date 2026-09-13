@@ -6,6 +6,9 @@ Hooks the game’s **Talk**, **BattleTalk**, and **TalkSubtitle** windows, trans
 
 Default language is still **Arabic** so existing installs keep working. Pick French, Japanese, Chinese, or any built-in pack in **General → Target language**.
 
+**How TTS + models work (full internals):** [TTS-AND-MODELS.md](TTS-AND-MODELS.md)  
+STA thread, voice pick, SSML, Opus-MT folders, Python JSON protocol, cache keys, target tokens, every language’s TTS culture.
+
 **Current version:** 0.3.0  
 **Dalamud:** API 15 (`.NET 10`)  
 **Author:** ALHABSI
@@ -120,6 +123,8 @@ Add-WindowsCapability -Online -Name Language.TextToSpeech~~~ko-KR~0.0.1.0
 
 English-only desktop voices often misread other scripts. Use a native pack or a **Multilingual** voice.
 
+Full TTS internals (STA queue, Auto ladder, gender, SSML vs PromptBuilder, capability names): [TTS-AND-MODELS.md](TTS-AND-MODELS.md).
+
 ### 8. Switch language later
 
 ```powershell
@@ -173,6 +178,8 @@ Cache is stored **per language**. Old Arabic cache stays valid.
 Chinese / Portuguese / Korean packs send an Opus **target token** (`>>cmn_Hans<<`, `>>por<<`, `>>kor<<`). You do not type these unless you use **Custom**.
 
 Japanese repo id is **`opus-mt-en-jap`**, not `en-ja`.
+
+Every pack’s **token / TTS culture / Windows capability / font**: [TTS-AND-MODELS.md §3](TTS-AND-MODELS.md#3-language-pack-map-model--tts-together). Worker protocol, chunking, cache keys: same file.
 
 ---
 
@@ -278,6 +285,8 @@ Talk / BattleTalk / TalkSubtitle
 - **TTS:** never runs `System.Speech` on the game/pool thread; all synth work is queued on an STA worker thread  
 
 Native English in the game UI is left unchanged. The translation appears only in the overlay (and optionally as speech). Keep the **game client language on English**.
+
+Step-by-step of one Talk line through cache → Python → SSML: [TTS-AND-MODELS.md](TTS-AND-MODELS.md).
 
 ---
 
