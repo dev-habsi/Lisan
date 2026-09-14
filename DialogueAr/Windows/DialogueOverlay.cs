@@ -18,7 +18,7 @@ public sealed class DialogueOverlay : Window, IDisposable
     private bool dockedToTalk;
 
     public DialogueOverlay(Plugin plugin)
-        : base("DialogueAr Overlay###DialogueArOverlay",
+        : base("Lisan Overlay###LisanOverlay",
             ImGuiWindowFlags.NoTitleBar |
             ImGuiWindowFlags.NoScrollbar |
             ImGuiWindowFlags.AlwaysAutoResize |
@@ -214,7 +214,6 @@ public sealed class DialogueOverlay : Window, IDisposable
                 ? new Vector4(0.18f, 0.15f, 0.12f, 1f)
                 : cfg.OverlayTextColor;
 
-        var painted = false;
         void DrawTranslation()
         {
             if (string.IsNullOrWhiteSpace(line.Translation))
@@ -225,7 +224,6 @@ public sealed class DialogueOverlay : Window, IDisposable
                 ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + wrapW);
                 ImGui.TextColored(textCol, line.Translation);
                 ImGui.PopTextWrapPos();
-                painted = ImGui.CalcTextSize(line.Translation).X > 2f;
                 return;
             }
 
@@ -258,7 +256,6 @@ public sealed class DialogueOverlay : Window, IDisposable
                 var pad = Math.Max(0f, wrapW - size.X);
                 ImGui.SetCursorPosX(originX + pad);
                 ImGui.TextColored(textCol, row);
-                painted = true;
             }
 
             ImGui.PopStyleVar();
@@ -276,8 +273,6 @@ public sealed class DialogueOverlay : Window, IDisposable
 
         if (!docked)
             DrawXivFrame();
-        if (painted)
-            plugin.Watcher.MarkOverlayPainted();
         ImGui.SetWindowFontScale(1f);
 
         if (!docked && cfg.RightClickOpensConfig && ImGui.IsWindowHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Right))

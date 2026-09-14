@@ -39,8 +39,6 @@ public sealed class AddonDialogueWatcher : IDisposable
     private string lastSeenSource = string.Empty;
     private long lastSeenTick;
     private int unseenFrames;
-    private uint lastBodyNodeId;
-    private long overlayPaintedAt;
 
     public AddonDialogueWatcher(LocalTranslator translator)
     {
@@ -55,10 +53,6 @@ public sealed class AddonDialogueWatcher : IDisposable
                 return current;
         }
     }
-
-    public void MarkOverlayPainted() => overlayPaintedAt = Environment.TickCount64;
-
-    private bool OverlayRecentlyPainted() => Environment.TickCount64 - overlayPaintedAt < 250;
 
     public void Register()
     {
@@ -215,8 +209,6 @@ public sealed class AddonDialogueWatcher : IDisposable
         if (now - lastSeenTick < 140)
             return;
 
-        var painted = OverlayRecentlyPainted();
-
         if (Plugin.Configuration.ReplaceNativeDialogue)
         {
             if (lastSource == source && !string.IsNullOrEmpty(lastDisplay))
@@ -225,14 +217,14 @@ public sealed class AddonDialogueWatcher : IDisposable
                     return;
                 if (ContainsArabic(english) && TargetLanguages.Current().ArabicScript)
                 {
-                    SyncNativeVisibility(addonName, usedNodeId, painted);
+                    HideBodyText(addonName, usedNodeId);
                     return;
                 }
             }
 
             if (english == lastOriginal && lastSource == source && !string.IsNullOrEmpty(lastDisplay))
             {
-                ApplyNativeBody(addonName, usedNodeId, lastDisplay, painted);
+                ApplyNativeBody(addonName, usedNodeId, lastDisplay);
                 return;
             }
         }
@@ -242,14 +234,13 @@ public sealed class AddonDialogueWatcher : IDisposable
         if (key == lastKey)
         {
             if (Plugin.Configuration.ReplaceNativeDialogue && !string.IsNullOrEmpty(lastDisplay))
-                ApplyNativeBody(addonName, usedNodeId, lastDisplay, painted);
+                ApplyNativeBody(addonName, usedNodeId, lastDisplay);
             return;
         }
         lastKey = key;
         lastOriginal = english;
         lastSource = source;
         lastDisplay = string.Empty;
-        lastBodyNodeId = usedNodeId;
 
         PushBusy(speaker, english, source, usedNodeId);
         if (Plugin.Configuration.ReplaceNativeDialogue && NeedsGameFontOverlay())
@@ -281,7 +272,7 @@ public sealed class AddonDialogueWatcher : IDisposable
             }
 
             if (Plugin.Configuration.ReplaceNativeDialogue)
-                ApplyNativeBody(capturedAddon, capturedNode, display, overlayPainted: true);
+                ApplyNativeBody(capturedAddon, capturedNode, display);
 
             if (Plugin.Configuration.LogTranslations)
                 Plugin.Log.Information($"[{capturedSource}] {captured} => {translated}");
@@ -301,12 +292,12 @@ public sealed class AddonDialogueWatcher : IDisposable
                 _ = Plugin.Framework.RunOnFrameworkThread(() =>
                 {
                     try { Finish(translated); }
-                    catch (Exception ex) { Plugin.Log.Warning(ex, "DialogueAr native write failed"); }
+                    catch (Exception ex) { Plugin.Log.Warning(ex, "Lisan native write failed"); }
                 });
             }
             catch (Exception ex)
             {
-                Plugin.Log.Warning(ex, "DialogueAr translate failed");
+                Plugin.Log.Warning(ex, "Lisan translate failed");
                 _ = Plugin.Framework.RunOnFrameworkThread(() =>
                 {
                     RestoreBodyText(capturedAddon, capturedNode);
@@ -343,7 +334,6 @@ public sealed class AddonDialogueWatcher : IDisposable
                 lastSource = string.Empty;
                 lastSeenEnglish = string.Empty;
                 lastSeenSource = string.Empty;
-                lastBodyNodeId = 0;
                 unseenFrames = 0;
             }
         }
@@ -359,7 +349,6 @@ public sealed class AddonDialogueWatcher : IDisposable
         lastSource = string.Empty;
         lastSeenEnglish = string.Empty;
         lastSeenSource = string.Empty;
-        lastBodyNodeId = 0;
         unseenFrames = 0;
     }
 
@@ -461,11 +450,6 @@ public sealed class AddonDialogueWatcher : IDisposable
         }
     }
 
-    public void SetTestLine(string speaker, string english, string translation)
-    {
-        SetTestLineForSource("Test", english, translation);
-    }
-
     public void SetTestLineForSource(string source, string english, string translation)
     {
         lock (gate)
@@ -483,7 +467,6 @@ public sealed class AddonDialogueWatcher : IDisposable
             lastSource = source;
             lastDisplay = FormatForAddon(translation);
             lastKey = source + "||" + english;
-            lastBodyNodeId = current.BodyNodeId;
         }
 
         if (!Plugin.Configuration.ReplaceNativeDialogue)
@@ -494,7 +477,7 @@ public sealed class AddonDialogueWatcher : IDisposable
         var map = MapSource(source);
         if (map is null)
             return;
-        ApplyNativeBody(map.Value.Addon, map.Value.BodyNodeId, lastDisplay, overlayPainted: false);
+        ApplyNativeBody(map.Value.Addon, map.Value.BodyNodeId, lastDisplay);
     }
 
     public static bool NeedsGameFontOverlay() =>
@@ -592,20 +575,15 @@ public sealed class AddonDialogueWatcher : IDisposable
         return lines.Length == 0 ? translation : string.Join("\n", lines);
     }
 
-    private unsafe void ApplyNativeBody(string addonName, uint bodyNodeId, string text, bool overlayPainted)
+    private unsafe void ApplyNativeBody(string addonName, uint bodyNodeId, string text)
     {
         if (NeedsGameFontOverlay())
         {
-            SyncNativeVisibility(addonName, bodyNodeId, overlayPainted);
+            HideBodyText(addonName, bodyNodeId);
             return;
         }
 
         WriteBodyText(addonName, bodyNodeId, text);
-    }
-
-    private static void SyncNativeVisibility(string addonName, uint bodyNodeId, bool overlayPainted)
-    {
-        HideBodyText(addonName, bodyNodeId);
     }
 
     private static unsafe void HideBodyText(string addonName, uint bodyNodeId)

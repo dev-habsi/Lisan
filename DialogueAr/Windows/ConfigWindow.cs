@@ -2,10 +2,11 @@ using System;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Windowing;
+using Dalamud.Utility;
 
 namespace DialogueAr.Windows;
 
-public sealed class ConfigWindow : Window, IDisposable
+public sealed class ConfigWindow : Window
 {
     private readonly Plugin plugin;
     private string modelDirEdit = string.Empty;
@@ -14,14 +15,12 @@ public sealed class ConfigWindow : Window, IDisposable
     private bool customFieldsLoaded;
 
     public ConfigWindow(Plugin plugin)
-        : base("DialogueAr Settings###DialogueArConfig")
+        : base("Lisan###LisanConfig")
     {
         this.plugin = plugin;
         Size = new Vector2(500, 560);
         SizeCondition = ImGuiCond.FirstUseEver;
     }
-
-    public void Dispose() { }
 
     public override void Draw()
     {
@@ -39,10 +38,10 @@ public sealed class ConfigWindow : Window, IDisposable
         }
 
         var lang = TargetLanguages.Current();
-        ImGui.TextWrapped($"Offline English → {lang.Name} dialogue (Talk / BattleTalk / TalkSubtitle). No cloud translation API.");
+        ImGui.TextWrapped($"Hear this world in {lang.Name}. Offline, on your machine — a little gift from {Brand.SiteLabel}.");
         ImGui.Spacing();
 
-        if (ImGui.BeginTabBar("DialogueArTabs"))
+        if (ImGui.BeginTabBar("LisanTabs"))
         {
             if (ImGui.BeginTabItem("General"))
             {
@@ -72,7 +71,12 @@ public sealed class ConfigWindow : Window, IDisposable
         }
 
         ImGui.Separator();
-        ImGui.TextDisabled("/dialogar  |  /dialogar config  |  /dialogar lang fr  |  /dialogar test");
+        ImGui.TextDisabled($"{Brand.Command}   ·   {Brand.Command} config   ·   {Brand.Command} lang fr   ·   {Brand.Command} test");
+        ImGui.Spacing();
+        ImGui.TextDisabled("Made with love at");
+        ImGui.SameLine();
+        if (ImGui.SmallButton(Brand.SiteLabel))
+            Util.OpenLink(Brand.Site);
     }
 
     private void DrawGeneral(Configuration cfg)
@@ -243,7 +247,7 @@ public sealed class ConfigWindow : Window, IDisposable
         }
 
         ImGui.Spacing();
-        ImGui.TextDisabled($"Plugin version: {typeof(Plugin).Assembly.GetName().Version}");
+        ImGui.TextDisabled($"{Brand.Name} {typeof(Plugin).Assembly.GetName().Version}  ·  {Brand.SiteLabel}");
     }
 
     private void Toggle(string label, Func<bool> get, Action<bool> set)

@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Threading.Tasks;
 using DialogueAr.Services;
 using DialogueAr.Windows;
@@ -21,7 +20,8 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IFramework Framework { get; private set; } = null!;
     [PluginService] internal static IPluginLog Log { get; private set; } = null!;
 
-    private const string CommandName = "/dialogar";
+    private const string CommandName = Brand.Command;
+    private const string LegacyCommandName = Brand.LegacyCommand;
 
     public static Configuration Configuration { get; private set; } = null!;
 
@@ -29,7 +29,7 @@ public sealed class Plugin : IDalamudPlugin
     public LocalTranslator Translator { get; }
     public AddonDialogueWatcher Watcher { get; }
 
-    public readonly WindowSystem WindowSystem = new("DialogueAr");
+    public readonly WindowSystem WindowSystem = new(Brand.Name);
     private ConfigWindow ConfigWindow { get; }
     public DialogueOverlay Overlay { get; }
 
@@ -55,7 +55,12 @@ public sealed class Plugin : IDalamudPlugin
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Toggle DialogueAr. '/dialogar config' | '/dialogar lang <code>' | '/dialogar test'",
+            HelpMessage = $"Toggle {Brand.Name}. '{Brand.Command} config' | '{Brand.Command} lang fr' | '{Brand.Command} test'",
+        });
+        CommandManager.AddHandler(LegacyCommandName, new CommandInfo(OnCommand)
+        {
+            HelpMessage = $"Same as {Brand.Command} (old name).",
+            ShowInHelp = false,
         });
 
         PluginInterface.UiBuilder.Draw += WindowSystem.Draw;
@@ -81,7 +86,7 @@ public sealed class Plugin : IDalamudPlugin
         });
 
         var lang = TargetLanguages.Current();
-        Log.Information($"DialogueAr loaded. Target={lang.Code} ({lang.Name}). Run Models/setup-models.ps1 -Language {lang.Code} if the model is missing.");
+        Log.Information($"{Brand.Name} loaded. Target={lang.Code} ({lang.Name}). With love from {Brand.SiteLabel}. Run Models/setup-models.ps1 -Language {lang.Code} if the model is missing.");
     }
 
     public void Dispose()
@@ -92,12 +97,12 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.OpenMainUi -= ToggleConfigUi;
 
         WindowSystem.RemoveAllWindows();
-        ConfigWindow.Dispose();
         Overlay.Dispose();
         Watcher.Dispose();
         Translator.Dispose();
         Cache.Dispose();
         CommandManager.RemoveHandler(CommandName);
+        CommandManager.RemoveHandler(LegacyCommandName);
     }
 
     /// <summary>Apply a new target language: restart worker, reload overlay font, drop stale line.</summary>
@@ -108,7 +113,7 @@ public sealed class Plugin : IDalamudPlugin
         Overlay.ReloadFont();
 
         var lang = TargetLanguages.Current();
-        Log.Information($"DialogueAr language → {lang.Code} ({lang.Name}). Model: {Translator.ModelDirectory}");
+        Log.Information($"{Brand.Name} language → {lang.Code} ({lang.Name}). Model: {Translator.ModelDirectory}");
 
         if (Configuration.WarmupTranslatorOnLoad)
         {
@@ -157,7 +162,7 @@ public sealed class Plugin : IDalamudPlugin
         if (string.IsNullOrWhiteSpace(code))
         {
             var cur = TargetLanguages.Current();
-            Log.Information($"DialogueAr language: {cur.Code} ({cur.Name}). Example: /dialogar lang fr");
+            Log.Information($"{Brand.Name} language: {cur.Code} ({cur.Name}). Example: {Brand.Command} lang fr");
             return;
         }
 
@@ -172,7 +177,7 @@ public sealed class Plugin : IDalamudPlugin
             && !AddonDialogueWatcher.IsNamedAddonVisible("_BattleTalk")
             && !AddonDialogueWatcher.IsNamedAddonVisible("TalkSubtitle"))
         {
-            Log.Information("DialogueAr test: open Talk/BattleTalk first, then /dialogar test");
+            Log.Information($"{Brand.Name} test: open Talk/BattleTalk first, then {Brand.Command} test");
             return;
         }
 

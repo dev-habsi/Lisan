@@ -1,14 +1,16 @@
-# DialogueAr
+# Lisan
 
-Offline **English → any language** dialogue translator for Final Fantasy XIV (Dalamud).
+**Lisan** (لسان) means tongue, and language. Offline **English → any language** dialogue for Final Fantasy XIV.
 
-Hooks the game’s **Talk**, **BattleTalk**, and **TalkSubtitle** windows, translates lines locally with **Helsinki-NLP Opus-MT** (no cloud translation API), and shows the result in the Talk balloon / an ImGui overlay.
+Made with love at **[habsi.net](https://habsi.net)**.
 
-Default language is still **Arabic** so existing installs keep working. Pick French, Japanese, Chinese, or any built-in pack in **General → Target language**.
+Hooks **Talk**, **BattleTalk**, and **TalkSubtitle**, translates locally with **Helsinki-NLP Opus-MT** (nothing leaves your PC), and writes the line onto the balloon.
 
-**Current version:** 0.3.0  
+Default language is **Arabic**. Pick French, Japanese, Chinese, or any built-in pack in **General → Target language**.
+
+**Current version:** 0.4.0  
 **Dalamud:** API 15 (`.NET 10`)  
-**Author:** ALHABSI
+**Author:** [ALHABSI](https://habsi.net)
 
 ---
 
@@ -84,8 +86,8 @@ Then in-game pick **Custom model folder**, optional Opus token (`>>cmn_Hans<<` f
 
 1. Dalamud Settings → **Experimental** / **Dev Plugins**.
 2. Add path: `D:\Dev\DialogueAr\DialogueAr\bin\x64\Release`
-3. Enable **DialogueAr** and click **Reload**.
-4. `/dialogar config` → **General** → **Target language** = the code you downloaded.
+3. Enable **Lisan** and click **Reload**.
+4. `/lisan config` → **General** → **Target language** = the code you downloaded.
 5. **Translator** tab must say `Ready (opus-mt-…)` after the first line or after **Apply language / restart worker**.
 
 If status is `Model missing`, the folder with `config.json` + weights is not next to the loaded DLL. Run setup again and rebuild, or set **Custom model folder** to the absolute path of `Models\opus-mt-en-fr` (etc.).
@@ -108,7 +110,7 @@ cd D:\Dev\DialogueAr\DialogueAr\Models
 
 Rebuild (or copy the new `Models` folder into Release), then in-game:
 
-- `/dialogar lang de`  
+- `/lisan lang de`  
   or General tab dropdown → **Apply language / restart worker**
 
 Cache is stored **per language**. Old Arabic cache stays valid.
@@ -161,11 +163,12 @@ Every pack’s **token / font** lives in `TargetLanguages.cs`. Worker protocol a
 
 | Command | Action |
 |---------|--------|
-| `/dialogar` | Toggle plugin on/off |
-| `/dialogar config` | Open settings |
-| `/dialogar lang` | Print current language |
-| `/dialogar lang fr` | Switch language and restart the worker |
-| `/dialogar test` | Translate a sample line (Talk/BattleTalk must be open) |
+| `/lisan` | Toggle plugin on/off |
+| `/lisan config` | Open settings |
+| `/lisan lang` | Print current language |
+| `/lisan lang fr` | Switch language and restart the worker |
+| `/lisan test` | Translate a sample line (Talk/BattleTalk must be open) |
+| `/dialogar` | Same commands (old name, still works) |
 
 Right-click the overlay (if enabled) also opens config.
 
@@ -239,7 +242,8 @@ Keep the **game client language on English**. Arabic (and other scripts the game
 ## Project layout
 
 ```
-DialogueAr/
+DialogueAr/                   # folder + assembly stay DialogueAr (config dir)
+├── Brand.cs                  # Lisan display name, /lisan, habsi.net
 ├── Plugin.cs                 # Dalamud entry, commands, language apply
 ├── Configuration.cs          # Settings
 ├── TargetLanguages.cs        # Built-in language catalog
@@ -298,7 +302,7 @@ To ship a new built-in pack, keep **Code / Repo / Folder / Font / token** in syn
 | Overlay empty | Plugin enabled, Show overlay on, Talk visible, source toggles on |
 | Tofu boxes | Font missing in `Fonts\`; re-run setup for that language; reload plugin |
 | Arabic/Hebrew looks LTR | Language must be `ar` / `he` / `fa` (or Custom + RTL); wrap width |
-| Wrong language after switch | `/dialogar lang <code>` or Apply language; confirm Translator path folder name |
+| Wrong language after switch | `/lisan lang <code>` or Apply language; confirm Translator path folder name |
 | Custom model ignored | Folder must exist and contain `config.json`; then Apply language |
 | `setup-models.ps1` 404 | Wrong repo id (Japanese is `opus-mt-en-jap`); pass `-Repo` from the model card |
 | Thai / some small pairs fail download | That `opus-mt-en-th` repo may not exist; find another Helsinki repo and use `-Repo` |
@@ -318,6 +322,8 @@ dotnet build -c Release -p:Platform=x64
 ---
 
 ## Credits & licenses
+
+**Lisan** is made with love at [habsi.net](https://habsi.net).
 
 - Translation models: [Helsinki-NLP Opus-MT](https://huggingface.co/Helsinki-NLP)  
 - Arabic shaping: [ArabicRt](https://www.nuget.org/packages/ArabicRt)  

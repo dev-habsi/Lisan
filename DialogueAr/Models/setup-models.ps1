@@ -1,4 +1,4 @@
-# One-time local model + font setup for DialogueAr (no translation cloud API).
+# One-time local model + font setup for Lisan (no translation cloud API).
 # Examples:
 #   .\setup-models.ps1
 #   .\setup-models.ps1 -Language fr
@@ -75,7 +75,7 @@ if (-not [string]::IsNullOrWhiteSpace($Repo)) {
 
 $ModelDir = Join-Path $Root $pack.Folder
 
-Write-Host "=== DialogueAr model setup ==="
+Write-Host "=== Lisan model setup ==="
 Write-Host "Language : $Language"
 Write-Host "Repo     : $($pack.Repo)"
 Write-Host "Model dir: $ModelDir"
@@ -109,4 +109,4 @@ if ($pack.FontFile -and $pack.FontUrl) {
 }
 
 Write-Host ""
-Write-Host "Done. In-game: /dialogar lang $Language   or pick the language in config, then reload if the worker was already running."
+Write-Host "Done. In-game: /lisan lang $Language   or pick the language in config, then reload if the worker was already running."

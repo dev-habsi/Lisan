@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
   <PropertyGroup>
-    <Version>0.3.0.0</Version>
+    <Version>0.4.0.0</Version>
     <Author>ALHABSI</Author>
-    <Name>DialogueAr</Name>
-    <Punchline>Offline English→any-language dialogue translator for Talk, BattleTalk, and cutscenes.</Punchline>
-    <Description>Hooks Talk, BattleTalk, and TalkSubtitle, translates English dialogue locally with Helsinki-NLP Opus-MT on disk (Arabic, French, Japanese, and many more — no cloud translation API), and shows an ImGui overlay.</Description>
+    <Name>Lisan</Name>
+    <Punchline>Hear Eorzea in your own tongue. Offline dialogue translation, made with love at habsi.net.</Punchline>
+    <Description>Lisan (لسان — tongue, language) listens to Talk, BattleTalk, and cutscene subtitles, then translates English locally with Helsinki-NLP Opus-MT on your PC. No cloud translation. Arabic, French, Japanese, and many more. A small gift from habsi.net.</Description>
+    <RepoUrl>https://habsi.net</RepoUrl>
     <Tags>translation;dialogue;offline;arabic;accessibility</Tags>
     <CategoryTags>ui;utility</CategoryTags>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

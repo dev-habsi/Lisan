@@ -45,7 +45,7 @@ public sealed class TranslationCache : IDisposable
     {
         map[LangKey(language, english)] = translation;
         Interlocked.Exchange(ref dirty, 1);
-        SaveDebounced();
+        SaveNow();
     }
 
     public void Clear()
@@ -78,12 +78,6 @@ public sealed class TranslationCache : IDisposable
         {
             // ignore corrupt cache
         }
-    }
-
-    private void SaveDebounced()
-    {
-        // cheap: save immediately for reliability on dialogue lines
-        SaveNow();
     }
 
     private void SaveNow()

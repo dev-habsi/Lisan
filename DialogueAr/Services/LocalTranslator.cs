@@ -2,8 +2,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace DialogueAr.Services;
 
@@ -79,7 +77,6 @@ public sealed class LocalTranslator : IDisposable
     }
 
     public string Status => status;
-    public bool IsReady => ready;
     public string ModelDirectory => modelDir;
 
     public bool ModelPresent =>
@@ -161,9 +158,6 @@ public sealed class LocalTranslator : IDisposable
             return english;
         }
     }
-
-    public Task<string> TranslateAsync(string english, CancellationToken ct = default) =>
-        Task.Run(() => Translate(english), ct);
 
     /// <summary>Reload model path + target token after the user changes language.</summary>
     public void Restart()
