@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.Linq;
 using System.Speech.Synthesis;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 namespace DialogueAr.Services;
@@ -24,6 +25,8 @@ public sealed class TtsVoiceInfo
 public sealed class DialogueTtsService : IDisposable
 {
     public const string AutoVoiceName = "";
+
+    private static readonly Regex ArabicLetters = new(@"\p{IsArabic}", RegexOptions.Compiled);
 
     private readonly BlockingCollection<Action> queue = new();
     private readonly Thread worker;
@@ -120,6 +123,13 @@ public sealed class DialogueTtsService : IDisposable
 
         if (TargetLanguages.IsBusyPlaceholder(text))
             return;
+
+        var lang = TargetLanguages.Current();
+        if (lang.ArabicScript && !ArabicLetters.IsMatch(text))
+        {
+            status = "TTS skipped: text is not Arabic (translator may still be warming up)";
+            return;
+        }
 
         var spoken = text;
         var gender = SpeakerGender.Resolve(speakerName, Plugin.Configuration.TtsVoiceGender);
@@ -312,6 +322,15 @@ public sealed class DialogueTtsService : IDisposable
         if (multi is not null)
         {
             ApplySelected(multi, gender);
+            return;
+        }
+
+        // Arabic-script: English desktop voices cannot speak it. Stop here.
+        if (lang.ArabicScript)
+        {
+            selectedVoiceName = null;
+            usePromptCulture = false;
+            status = "TTS: install Arabic (ar-SA) or a Multilingual voice";
             return;
         }
 

@@ -39,6 +39,7 @@ public sealed class Plugin : IDalamudPlugin
     public Plugin()
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        Configuration.MigrateOverlayTheme();
         Tts = new DialogueTtsService();
 
         var pluginDir = PluginInterface.AssemblyLocation.Directory?.FullName
@@ -64,8 +65,11 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.Draw += WindowSystem.Draw;
         PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigUi;
         PluginInterface.UiBuilder.OpenMainUi += ToggleConfigUi;
+        // Story Talk is a cutscene: Dalamud hides plugin ImGui unless this is on.
+        PluginInterface.UiBuilder.DisableCutsceneUiHide = true;
+        PluginInterface.UiBuilder.DisableAutomaticUiHide = true;
 
-        Overlay.IsOpen = Configuration.ShowOverlay;
+        Overlay.IsOpen = true;
 
         Task.Run(() =>
         {
@@ -199,8 +203,11 @@ public sealed class Plugin : IDalamudPlugin
         Task.Run(() =>
         {
             var translated = Translator.Translate(sample);
-            Watcher.SetTestLineForSource(source, sample, translated);
-            Tts.Speak(translated, ObjectTable.LocalPlayer?.Name.TextValue);
+            _ = Framework.RunOnFrameworkThread(() =>
+            {
+                Watcher.SetTestLineForSource(source, sample, translated);
+                Tts.Speak(translated, ObjectTable.LocalPlayer?.Name.TextValue);
+            });
         });
     }
 

@@ -146,14 +146,17 @@ public sealed class ConfigWindow : Window, IDisposable
         Toggle("Talk (NPC dialogue)", () => cfg.TranslateTalk, v => cfg.TranslateTalk = v);
         Toggle("BattleTalk", () => cfg.TranslateBattleTalk, v => cfg.TranslateBattleTalk = v);
         Toggle("TalkSubtitle (cutscenes)", () => cfg.TranslateTalkSubtitle, v => cfg.TranslateTalkSubtitle = v);
+        ImGui.Spacing();
+        Toggle("Replace in-game dialogue box", () => cfg.ReplaceNativeDialogue, v => cfg.ReplaceNativeDialogue = v);
+        ImGui.TextDisabled("Arabic is drawn on the Talk balloon with Noto (game font has no Arabic glyphs — that was the ====).");
     }
 
     private void DrawOverlay(Configuration cfg)
     {
-        Toggle("Show overlay", () => cfg.ShowOverlay, v =>
+        Toggle("Show extra overlay (off = use the game balloon only)", () => cfg.ShowOverlay, v =>
         {
             cfg.ShowOverlay = v;
-            plugin.Overlay.IsOpen = v;
+            plugin.Overlay.IsOpen = true;
         });
         Toggle("Lock overlay (click-through)", () => cfg.LockOverlay, v => cfg.LockOverlay = v);
         Toggle("Show speaker name", () => cfg.ShowSpeaker, v => cfg.ShowSpeaker = v);
@@ -182,6 +185,7 @@ public sealed class ConfigWindow : Window, IDisposable
             cfg.Save();
         }
 
+        ImGui.TextDisabled("Overlay uses FFXIV-style parchment + gold frame (not a black box).");
         ImGui.TextDisabled("RTL languages (Arabic / Hebrew / Persian) are pre-wrapped and right-aligned. LTR uses ImGui wrap.");
 
         var bg = cfg.OverlayBgAlpha;

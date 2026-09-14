@@ -6,7 +6,8 @@
     <Name>DialogueAr</Name>
     <Punchline>Offline English→any-language dialogue translator for Talk, BattleTalk, and cutscenes.</Punchline>
     <Description>Hooks Talk, BattleTalk, and TalkSubtitle, translates English dialogue locally with Helsinki-NLP Opus-MT on disk (Arabic, French, Japanese, and many more — no cloud translation API), and shows an ImGui overlay with optional TTS.</Description>
-    <PackageTags>translation;dialogue;offline;multilingual</PackageTags>
+    <Tags>translation;dialogue;offline;tts;arabic;accessibility</Tags>
+    <CategoryTags>ui;utility</CategoryTags>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -15,6 +16,28 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Models\setup-models.ps1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <!-- Arabic pack (skip rust/tf mirrors — only pytorch weights are used). -->
+    <Content Include="Models\opus-mt-en-ar\config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Models\opus-mt-en-ar\generation_config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Models\opus-mt-en-ar\tokenizer_config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Models\opus-mt-en-ar\vocab.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Models\opus-mt-en-ar\source.spm">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Models\opus-mt-en-ar\target.spm">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Models\opus-mt-en-ar\pytorch_model.bin">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Fonts\**\*">
