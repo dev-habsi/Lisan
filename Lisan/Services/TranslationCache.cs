@@ -4,7 +4,7 @@ using System.IO;
 using System.Text.Json;
 using System.Threading;
 
-namespace DialogueAr.Services;
+namespace Lisan.Services;
 
 public sealed class TranslationCache : IDisposable
 {

@@ -4,7 +4,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Windowing;
 using Dalamud.Utility;
 
-namespace DialogueAr.Windows;
+namespace Lisan.Windows;
 
 public sealed class ConfigWindow : Window
 {
@@ -18,7 +18,7 @@ public sealed class ConfigWindow : Window
         : base("Lisan###LisanConfig")
     {
         this.plugin = plugin;
-        Size = new Vector2(500, 560);
+        Size = new Vector2(480, 520);
         SizeCondition = ImGuiCond.FirstUseEver;
     }
 
@@ -46,12 +46,6 @@ public sealed class ConfigWindow : Window
             if (ImGui.BeginTabItem("General"))
             {
                 DrawGeneral(cfg);
-                ImGui.EndTabItem();
-            }
-
-            if (ImGui.BeginTabItem("Overlay"))
-            {
-                DrawOverlay(cfg);
                 ImGui.EndTabItem();
             }
 
@@ -112,85 +106,51 @@ public sealed class ConfigWindow : Window
                 cfg.Save();
             }
 
-            Toggle("Right-to-left overlay", () => cfg.CustomRightToLeft, v =>
+            Toggle("Right-to-left script", () => cfg.CustomRightToLeft, v =>
             {
                 cfg.CustomRightToLeft = v;
                 plugin.Overlay.ReloadFont();
             });
-            ImGui.TextDisabled("Point Translator tab at your model folder, then Apply language.");
+            ImGui.TextDisabled("Set the model folder on Translator, then Apply language.");
             if (ImGui.Button("Apply custom language"))
                 plugin.ApplyLanguage();
         }
 
         ImGui.Spacing();
-        ImGui.Text("Translate sources");
+        ImGui.Text("Translate");
         Toggle("Talk (NPC dialogue)", () => cfg.TranslateTalk, v => cfg.TranslateTalk = v);
         Toggle("BattleTalk", () => cfg.TranslateBattleTalk, v => cfg.TranslateBattleTalk = v);
         Toggle("TalkSubtitle (cutscenes)", () => cfg.TranslateTalkSubtitle, v => cfg.TranslateTalkSubtitle = v);
+        ImGui.TextDisabled("Translation is written onto the game balloon. Scripts the game font cannot draw (Arabic, CJK, …) use a plugin font on the same balloon.");
+
         ImGui.Spacing();
-        Toggle("Replace in-game dialogue box", () => cfg.ReplaceNativeDialogue, v => cfg.ReplaceNativeDialogue = v);
-        ImGui.TextDisabled("Arabic is drawn on the Talk balloon with Noto (game font has no Arabic glyphs — that was the ====).");
-    }
-
-    private void DrawOverlay(Configuration cfg)
-    {
-        Toggle("Show extra overlay (off = use the game balloon only)", () => cfg.ShowOverlay, v =>
+        ImGui.Text("Balloon text");
+        var fontSize = cfg.BalloonFontSize;
+        if (ImGui.SliderFloat("Font size", ref fontSize, 16f, 42f, "%.0f"))
         {
-            cfg.ShowOverlay = v;
-            plugin.Overlay.IsOpen = true;
-        });
-        Toggle("Lock overlay (click-through)", () => cfg.LockOverlay, v => cfg.LockOverlay = v);
-        Toggle("Show speaker name", () => cfg.ShowSpeaker, v => cfg.ShowSpeaker = v);
-        Toggle("Show original English", () => cfg.ShowOriginalEnglish, v => cfg.ShowOriginalEnglish = v);
-        Toggle("Show “translating…” placeholder", () => cfg.ShowBusyPlaceholder, v => cfg.ShowBusyPlaceholder = v);
-        Toggle("Right-click overlay opens config", () => cfg.RightClickOpensConfig, v => cfg.RightClickOpensConfig = v);
-
-        var scale = cfg.OverlayScale;
-        if (ImGui.SliderFloat("Scale", ref scale, 0.7f, 3.0f, "%.2f"))
-        {
-            cfg.OverlayScale = scale;
+            cfg.BalloonFontSize = fontSize;
             cfg.Save();
         }
 
-        var width = cfg.OverlayWidth;
-        if (ImGui.SliderFloat("Wrap width", ref width, 280f, 900f, "%.0f"))
+        if (ImGui.IsItemDeactivatedAfterEdit())
+            plugin.Overlay.ReloadFont();
+
+        var col = cfg.BalloonTextColor;
+        if (ImGui.ColorEdit4("Text color", ref col))
         {
-            cfg.OverlayWidth = width;
+            cfg.BalloonTextColor = col;
             cfg.Save();
         }
 
-        var wrapChars = cfg.OverlayWrapChars;
-        if (ImGui.SliderInt("Wrap chars (0 = auto)", ref wrapChars, 0, 60))
+        if (ImGui.Button("Reset text look"))
         {
-            cfg.OverlayWrapChars = wrapChars;
+            cfg.BalloonFontSize = 26f;
+            cfg.BalloonTextColor = new Vector4(0.18f, 0.15f, 0.12f, 1f);
             cfg.Save();
+            plugin.Overlay.ReloadFont();
         }
 
-        ImGui.TextDisabled("Overlay uses FFXIV-style parchment + gold frame (not a black box).");
-        ImGui.TextDisabled("RTL languages (Arabic / Hebrew / Persian) are pre-wrapped and right-aligned. LTR uses ImGui wrap.");
-
-        var bg = cfg.OverlayBgAlpha;
-        if (ImGui.SliderFloat("Background opacity", ref bg, 0f, 1f, "%.2f"))
-        {
-            cfg.OverlayBgAlpha = bg;
-            cfg.Save();
-        }
-
-        var col = cfg.OverlayTextColor;
-        if (ImGui.ColorEdit4("Translation text color", ref col))
-        {
-            cfg.OverlayTextColor = col;
-            cfg.Save();
-        }
-
-        if (ImGui.Button("Reset overlay position"))
-        {
-            cfg.OverlayPosX = 420f;
-            cfg.OverlayPosY = 620f;
-            cfg.OverlayPosSaved = true;
-            cfg.Save();
-            plugin.Overlay.ApplySavedPosition(force: true);
-        }
+        ImGui.TextDisabled("Applies to balloon text. Arabic / CJK use the plugin font; other languages use the game font.");
     }
 
     private void DrawTranslator(Configuration cfg)

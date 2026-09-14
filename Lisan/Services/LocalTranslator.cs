@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 
-namespace DialogueAr.Services;
+namespace Lisan.Services;
 
 /// <summary>
 /// Offline EN→X via local Python worker + Helsinki-NLP Opus-MT on disk (no cloud translation API).
@@ -47,7 +47,7 @@ public sealed class LocalTranslator : IDisposable
             Path.Combine(pluginDir, "Models", folder),
             Path.GetFullPath(Path.Combine(pluginDir, "..", "..", "..", "Models", folder)),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "XIVLauncher", "pluginConfigs", "DialogueAr", "Models", folder),
+                "XIVLauncher", "pluginConfigs", Brand.InternalName, "Models", folder),
         };
 
         foreach (var c in candidates)

@@ -1,14 +1,15 @@
 using System;
+using System.IO;
 using System.Threading.Tasks;
-using DialogueAr.Services;
-using DialogueAr.Windows;
+using Lisan.Services;
+using Lisan.Windows;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 
-namespace DialogueAr;
+namespace Lisan;
 
 public sealed class Plugin : IDalamudPlugin
 {
@@ -35,8 +36,9 @@ public sealed class Plugin : IDalamudPlugin
 
     public Plugin()
     {
+        MigrateLegacyConfig();
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-        Configuration.MigrateOverlayTheme();
+        Configuration.Migrate();
 
         var pluginDir = PluginInterface.AssemblyLocation.Directory?.FullName
                         ?? AppContext.BaseDirectory;
@@ -201,4 +203,39 @@ public sealed class Plugin : IDalamudPlugin
     }
 
     public void ToggleConfigUi() => ConfigWindow.Toggle();
+
+    /// <summary>
+    /// Copy settings JSON and cache from the old DialogueAr config dir if Lisan has none yet.
+    /// </summary>
+    private static void MigrateLegacyConfig()
+    {
+        try
+        {
+            var newDir = PluginInterface.GetPluginConfigDirectory();
+            var root = Path.GetDirectoryName(newDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            if (string.IsNullOrEmpty(root))
+                return;
+
+            var newJson = Path.Combine(root, $"{Brand.InternalName}.json");
+            var oldJson = Path.Combine(root, $"{Brand.LegacyInternalName}.json");
+            if (File.Exists(oldJson) && !File.Exists(newJson))
+                File.Copy(oldJson, newJson);
+
+            var oldDir = Path.Combine(root, Brand.LegacyInternalName);
+            if (!Directory.Exists(oldDir))
+                return;
+
+            Directory.CreateDirectory(newDir);
+            foreach (var file in Directory.EnumerateFiles(oldDir))
+            {
+                var dest = Path.Combine(newDir, Path.GetFileName(file));
+                if (!File.Exists(dest))
+                    File.Copy(file, dest);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, $"Could not migrate {Brand.LegacyInternalName} config to {Brand.InternalName}");
+        }
+    }
 }

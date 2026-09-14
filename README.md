@@ -14,9 +14,24 @@ Default language is **Arabic**. Pick French, Japanese, Chinese, or any built-in 
 
 ---
 
-## Make it fully working (checklist)
+## Make it fully working
 
-Do these in order. Skip a step only if that piece is already on the machine.
+**One click** (does Python packages, language model + font, Release build, copies old DialogueAr settings, registers the Dalamud Dev Plugin):
+
+```powershell
+cd D:\Dev\Lisan
+.\Install-Lisan.ps1
+```
+
+Or double-click **`Install-Lisan.cmd`**. Other language: `.\Install-Lisan.ps1 -Language fr`. Redo model: `-ForceModel`.
+
+Then log in with Dalamud, reload plugins if the game was already open, `/lisan config`. Game client language = **English**.
+
+You still need **FFXIV + XIVLauncher + Dalamud (API 15)** and **Python 3.10+** (PATH) on the machine. The installer checks those and stops with a link if they are missing.
+
+Manual steps below if you do not want the installer.
+
+---
 
 ### 1. Game + Dalamud
 
@@ -39,20 +54,20 @@ If that fails, try `py -3 --version`. The plugin looks for `python` then `py`.
 ### 3. Build the plugin
 
 ```powershell
-cd D:\Dev\DialogueAr\DialogueAr
+cd D:\Dev\Lisan\Lisan
 dotnet build -c Release -p:Platform=x64
 ```
 
 Output folder (this is the Dev Plugin path):
 
-`D:\Dev\DialogueAr\DialogueAr\bin\x64\Release`
+`D:\Dev\Lisan\Lisan\bin\x64\Release`
 
 ### 4. Download a language model + font
 
 From the **source** `Models` folder (not only the bin copy — setup writes next to the script, then you rebuild or copy):
 
 ```powershell
-cd D:\Dev\DialogueAr\DialogueAr\Models
+cd D:\Dev\Lisan\Lisan\Models
 .\setup-models.ps1 -Language list          # see every built-in code
 .\setup-models.ps1 -Language ar            # Arabic (default)
 .\setup-models.ps1 -Language fr            # French
@@ -63,12 +78,12 @@ What the script does:
 
 1. Installs `torch` (CPU), `transformers`, `sentencepiece`, `huggingface_hub`.
 2. Downloads the Hugging Face repo into `Models\<folder>\` (needs internet **once**).
-3. Downloads an overlay font into `Fonts\` when the script needs one (Arabic, CJK, Hebrew, Hindi, Thai, Persian).
+3. Downloads an overlay font into `Fonts\` when the script needs one (Arabic, CJK, Hindi, Thai, Persian).
 
 After download, **rebuild** so `bin\x64\Release\Models\...` and `Fonts\...` are current:
 
 ```powershell
-cd D:\Dev\DialogueAr\DialogueAr
+cd D:\Dev\Lisan\Lisan
 dotnet build -c Release -p:Platform=x64
 ```
 
@@ -84,27 +99,45 @@ Then in-game pick **Custom model folder**, optional Opus token (`>>cmn_Hans<<` f
 
 ### 5. Load it in Dalamud
 
+If you previously loaded **DialogueAr**:
+
+1. Unload the old plugin.
+2. Remove the old Dev Plugin path (`...\DialogueAr\bin\x64\Release`).
+3. **Before the first Lisan load**, copy settings and cache (the old `pluginConfigs\DialogueAr` folder is otherwise ignored):
+
+```powershell
+$cfg = "$env:APPDATA\XIVLauncher\pluginConfigs"
+Copy-Item "$cfg\DialogueAr.json" "$cfg\Lisan.json" -Force -ErrorAction SilentlyContinue
+Copy-Item "$cfg\DialogueAr" "$cfg\Lisan" -Recurse -Force
+```
+
+Models already live in the repo, so you should not need to re-download Arabic. The plugin also copies missing DialogueAr settings/cache into Lisan on first load.
+
+Then:
+
 1. Dalamud Settings → **Experimental** / **Dev Plugins**.
-2. Add path: `D:\Dev\DialogueAr\DialogueAr\bin\x64\Release`
+2. Add path: `D:\Dev\Lisan\Lisan\bin\x64\Release`
 3. Enable **Lisan** and click **Reload**.
 4. `/lisan config` → **General** → **Target language** = the code you downloaded.
 5. **Translator** tab must say `Ready (opus-mt-…)` after the first line or after **Apply language / restart worker**.
 
+`/lisan` is unchanged; `/dialogar` still works as an alias.
+
 If status is `Model missing`, the folder with `config.json` + weights is not next to the loaded DLL. Run setup again and rebuild, or set **Custom model folder** to the absolute path of `Models\opus-mt-en-fr` (etc.).
 
-### 6. Overlay
+### 6. In-game balloon
 
-1. Enable **Show overlay**.
-2. Talk to an NPC (game client language should be **English** — that is the source text).
+1. Talk to an NPC (game client language should be **English** — that is the source text).
+2. Translation writes onto the Talk / BattleTalk balloon.
 3. First line can take 10–30s (Python + model warm-up). Later lines and cache hits are fast.
-4. Drag the overlay; right-click opens config.
+4. Scripts the game font cannot draw (Arabic, CJK, …) use the plugin font on the same balloon.
 
-**Tofu / empty boxes** for Japanese, Chinese, Korean, Arabic, Hebrew, Hindi, Thai: font file missing. Re-run `setup-models.ps1 -Language <code>` and reload the plugin (font is loaded at apply/reload).
+**Tofu / empty boxes** for Japanese, Chinese, Korean, Arabic, Hindi, Thai: font file missing. Re-run `setup-models.ps1 -Language <code>` and reload the plugin (font is loaded at apply/reload).
 
 ### 7. Switch language later
 
 ```powershell
-cd D:\Dev\DialogueAr\DialogueAr\Models
+cd D:\Dev\Lisan\Lisan\Models
 .\setup-models.ps1 -Language de
 ```
 
@@ -145,7 +178,6 @@ Cache is stored **per language**. Old Arabic cache stays valid.
 | `ko` | Korean | `Helsinki-NLP/opus-mt-tc-big-en-ko` | Noto Sans CJK KR |
 | `vi` | Vietnamese | `Helsinki-NLP/opus-mt-en-vi` | — |
 | `id` | Indonesian | `Helsinki-NLP/opus-mt-en-id` | — |
-| `he` | Hebrew | `Helsinki-NLP/opus-mt-en-he` | Noto Sans Hebrew |
 | `fa` | Persian | `Helsinki-NLP/opus-mt-en-fa` | Noto Naskh Arabic |
 | `hi` | Hindi | `Helsinki-NLP/opus-mt-en-hi` | Noto Sans Devanagari |
 | `th` | Thai | `Helsinki-NLP/opus-mt-en-th` | Noto Sans Thai |
@@ -170,8 +202,6 @@ Every pack’s **token / font** lives in `TargetLanguages.cs`. Worker protocol a
 | `/lisan test` | Translate a sample line (Talk/BattleTalk must be open) |
 | `/dialogar` | Same commands (old name, still works) |
 
-Right-click the overlay (if enabled) also opens config.
-
 ---
 
 ## Settings overview
@@ -181,20 +211,10 @@ Right-click the overlay (if enabled) also opens config.
 - Enable plugin  
 - **Target language** (built-in list or Custom)  
 - Custom: optional Opus token, RTL checkbox  
-- Translate **Talk** / **BattleTalk** / **TalkSubtitle**
+- Translate **Talk** / **BattleTalk** / **TalkSubtitle**  
+- Balloon **font size** and **text color** (plugin-font languages: Arabic, CJK, …)
 
-### Overlay
-
-- Show / lock (click-through)  
-- Show speaker name  
-- Show original English  
-- Show “translating…” placeholder  
-- Right-click opens config  
-- Scale, wrap width, wrap chars (`0` = auto)  
-- Background opacity, translation text color  
-- Reset overlay position  
-
-RTL scripts (Arabic, Persian, Hebrew) are pre-wrapped and right-aligned. LTR languages use ImGui wrap.
+Translation always writes onto the game balloon. Arabic / CJK use the plugin font on the same balloon.
 
 ### Translator
 
@@ -242,8 +262,8 @@ Keep the **game client language on English**. Arabic (and other scripts the game
 ## Project layout
 
 ```
-DialogueAr/                   # folder + assembly stay DialogueAr (config dir)
-├── Brand.cs                  # Lisan display name, /lisan, habsi.net
+Lisan/
+├── Brand.cs                  # display name, /lisan, habsi.net
 ├── Plugin.cs                 # Dalamud entry, commands, language apply
 ├── Configuration.cs          # Settings
 ├── TargetLanguages.cs        # Built-in language catalog
@@ -263,7 +283,9 @@ DialogueAr/                   # folder + assembly stay DialogueAr (config dir)
     └── (language font after setup)
 ```
 
-**Release output:** `DialogueAr\bin\x64\Release\`
+**Release output:** `Lisan\bin\x64\Release\`
+
+Dalamud **InternalName** is `Lisan` (config lives in `%AppData%\XIVLauncher\pluginConfigs\Lisan`).
 
 ---
 
@@ -299,9 +321,9 @@ To ship a new built-in pack, keep **Code / Repo / Folder / Font / token** in syn
 | Problem | What to check |
 |--------|----------------|
 | Stays English / no translation | Translator status; Python on PATH; `config.json` + weights in the model folder; `setup-models.ps1 -Language <code>`; **Apply language** |
-| Overlay empty | Plugin enabled, Show overlay on, Talk visible, source toggles on |
+| Balloon stays English | Plugin enabled, Talk visible, source toggles on; Translator status Ready |
 | Tofu boxes | Font missing in `Fonts\`; re-run setup for that language; reload plugin |
-| Arabic/Hebrew looks LTR | Language must be `ar` / `he` / `fa` (or Custom + RTL); wrap width |
+| Arabic looks LTR | Language must be `ar` / `fa` (or Custom + RTL) |
 | Wrong language after switch | `/lisan lang <code>` or Apply language; confirm Translator path folder name |
 | Custom model ignored | Folder must exist and contain `config.json`; then Apply language |
 | `setup-models.ps1` 404 | Wrong repo id (Japanese is `opus-mt-en-jap`); pass `-Repo` from the model card |

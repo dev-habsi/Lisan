@@ -12,6 +12,7 @@ param(
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $FontDir = Join-Path (Split-Path -Parent $Root) "Fonts"
+$Python = if (-not [string]::IsNullOrWhiteSpace($env:LISAN_PYTHON)) { $env:LISAN_PYTHON } else { "python" }
 
 # code = @{ Repo; Folder; FontFile; FontUrl }
 $Packs = @{
@@ -39,7 +40,6 @@ $Packs = @{
     ko = @{ Repo = "Helsinki-NLP/opus-mt-tc-big-en-ko"; Folder = "opus-mt-tc-big-en-ko"; FontFile = "NotoSansCJKkr-Regular.otf"; FontUrl = "https://github.com/notofonts/noto-cjk/raw/main/Sans/OTF/Korean/NotoSansCJKkr-Regular.otf" }
     vi = @{ Repo = "Helsinki-NLP/opus-mt-en-vi"; Folder = "opus-mt-en-vi" }
     id = @{ Repo = "Helsinki-NLP/opus-mt-en-id"; Folder = "opus-mt-en-id" }
-    he = @{ Repo = "Helsinki-NLP/opus-mt-en-he"; Folder = "opus-mt-en-he"; FontFile = "NotoSansHebrew-Regular.ttf"; FontUrl = "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansHebrew/NotoSansHebrew-Regular.ttf" }
     fa = @{ Repo = "Helsinki-NLP/opus-mt-en-fa"; Folder = "opus-mt-en-fa"; FontFile = "NotoNaskhArabic-Regular.ttf"; FontUrl = "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoNaskhArabic/NotoNaskhArabic-Regular.ttf" }
     hi = @{ Repo = "Helsinki-NLP/opus-mt-en-hi"; Folder = "opus-mt-en-hi"; FontFile = "NotoSansDevanagari-Regular.ttf"; FontUrl = "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansDevanagari/NotoSansDevanagari-Regular.ttf" }
     th = @{ Repo = "Helsinki-NLP/opus-mt-en-th"; Folder = "opus-mt-en-th"; FontFile = "NotoSansThai-Regular.ttf"; FontUrl = "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSansThai/NotoSansThai-Regular.ttf" }
@@ -81,14 +81,14 @@ Write-Host "Repo     : $($pack.Repo)"
 Write-Host "Model dir: $ModelDir"
 
 Write-Host "[1/3] Python packages..."
-python -m pip install --upgrade pip
-python -m pip install "torch" --index-url https://download.pytorch.org/whl/cpu
-python -m pip install "transformers>=4.40" sentencepiece huggingface_hub
+& $Python -m pip install --upgrade pip
+& $Python -m pip install "torch" --index-url https://download.pytorch.org/whl/cpu
+& $Python -m pip install "transformers>=4.40" sentencepiece huggingface_hub
 
 Write-Host "[2/3] Download $($pack.Repo) (local files only after this)..."
-$env:DIALOGUEAR_MODEL = $ModelDir
-$env:DIALOGUEAR_REPO = $pack.Repo
-python -c "from huggingface_hub import snapshot_download; import os; d=os.environ['DIALOGUEAR_MODEL']; r=os.environ['DIALOGUEAR_REPO']; snapshot_download(repo_id=r, local_dir=d, local_dir_use_symlinks=False); print('OK', r, '->', d)"
+$env:LISAN_MODEL = $ModelDir
+$env:LISAN_REPO = $pack.Repo
+& $Python -c "from huggingface_hub import snapshot_download; import os; d=os.environ['LISAN_MODEL']; r=os.environ['LISAN_REPO']; snapshot_download(repo_id=r, local_dir=d, local_dir_use_symlinks=False); print('OK', r, '->', d)"
 
 New-Item -ItemType Directory -Force -Path $FontDir | Out-Null
 if ($pack.FontFile -and $pack.FontUrl) {

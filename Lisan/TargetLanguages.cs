@@ -1,6 +1,6 @@
 using System;
 
-namespace DialogueAr;
+namespace Lisan;
 
 /// <summary>
 /// Built-in English→X language packs (Helsinki-NLP Opus-MT on disk).
@@ -46,14 +46,6 @@ public static class TargetLanguages
         0x08A0, 0x08FF,
         0xFB50, 0xFDFF,
         0xFE70, 0xFEFF,
-        0,
-    ];
-
-    public static readonly ushort[] HebrewGlyphs =
-    [
-        0x0020, 0x00FF,
-        0x0590, 0x05FF,
-        0xFB1D, 0xFB4F,
         0,
     ];
 
@@ -137,9 +129,6 @@ public static class TargetLanguages
             busy: "Đang dịch…"),
         Lang("id", "Indonesian", "Helsinki-NLP/opus-mt-en-id", "opus-mt-en-id",
             busy: "Menerjemahkan…"),
-        Lang("he", "Hebrew", "Helsinki-NLP/opus-mt-en-he", "opus-mt-en-he",
-            rtl: true, busy: "מתרגם…",
-            font: "NotoSansHebrew-Regular.ttf", glyphs: HebrewGlyphs),
         Lang("fa", "Persian", "Helsinki-NLP/opus-mt-en-fa", "opus-mt-en-fa",
             rtl: true, arabic: true, busy: "در حال ترجمه…",
             font: "NotoNaskhArabic-Regular.ttf", glyphs: ArabicGlyphs),

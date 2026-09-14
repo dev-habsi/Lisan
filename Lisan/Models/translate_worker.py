@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Offline EN→X worker for DialogueAr. No network after model is on disk.
+# Offline EN→X worker for Lisan. No network after model is on disk.
 # Protocol: one JSON object per stdin line.
 #   {"cmd":"ping"} -> {"ok":true,"pong":true}
 #   {"cmd":"tr","text":"..."} -> {"ok":true,"t":"..."}  ("ar" kept as alias)

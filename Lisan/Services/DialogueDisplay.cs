@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Text;
 using ArabicRt;
 
-namespace DialogueAr.Services;
+namespace Lisan.Services;
 
 /// <summary>
-/// Overlay line prep. Arabic-script uses ArabicRt bake + RTL. Other RTL (Hebrew) wraps then right-aligns.
+/// Overlay line prep. Arabic-script uses ArabicRt bake + RTL. Other RTL wraps then right-aligns.
 /// LTR languages can use ImGui wrap instead.
 /// </summary>
 public static class DialogueDisplay
@@ -46,8 +46,8 @@ public static class DialogueDisplay
 
     public static int EstimateMaxChars(float wrapWidthPx, float fontSizePx)
     {
-        var avg = Math.Max(6f, fontSizePx * 0.55f);
-        return Math.Clamp((int)(wrapWidthPx / avg), 12, 80);
+        var avg = Math.Max(5f, fontSizePx * 0.46f);
+        return Math.Clamp((int)(wrapWidthPx / avg), 18, 100);
     }
 
     private static string[] BakeArabic(string logicalArabic, int maxLineChars)

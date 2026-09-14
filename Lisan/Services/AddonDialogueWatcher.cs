@@ -12,7 +12,7 @@ using Dalamud.Memory;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
-namespace DialogueAr.Services;
+namespace Lisan.Services;
 
 public sealed class DialogueLine
 {
@@ -209,31 +209,28 @@ public sealed class AddonDialogueWatcher : IDisposable
         if (now - lastSeenTick < 140)
             return;
 
-        if (Plugin.Configuration.ReplaceNativeDialogue)
+        if (lastSource == source && !string.IsNullOrEmpty(lastDisplay))
         {
-            if (lastSource == source && !string.IsNullOrEmpty(lastDisplay))
+            if (english == lastDisplay || SameLoose(english, lastDisplay))
+                return;
+            if (ContainsArabic(english) && TargetLanguages.Current().ArabicScript)
             {
-                if (english == lastDisplay || SameLoose(english, lastDisplay))
-                    return;
-                if (ContainsArabic(english) && TargetLanguages.Current().ArabicScript)
-                {
-                    HideBodyText(addonName, usedNodeId);
-                    return;
-                }
-            }
-
-            if (english == lastOriginal && lastSource == source && !string.IsNullOrEmpty(lastDisplay))
-            {
-                ApplyNativeBody(addonName, usedNodeId, lastDisplay);
+                HideBodyText(addonName, usedNodeId);
                 return;
             }
+        }
+
+        if (english == lastOriginal && lastSource == source && !string.IsNullOrEmpty(lastDisplay))
+        {
+            ApplyNativeBody(addonName, usedNodeId, lastDisplay);
+            return;
         }
 
         var speaker = speakerNodeId == 0 ? string.Empty : ReadNodeText(addon, speakerNodeId);
         var key = source + "|" + speaker + "|" + english;
         if (key == lastKey)
         {
-            if (Plugin.Configuration.ReplaceNativeDialogue && !string.IsNullOrEmpty(lastDisplay))
+            if (!string.IsNullOrEmpty(lastDisplay))
                 ApplyNativeBody(addonName, usedNodeId, lastDisplay);
             return;
         }
@@ -243,7 +240,7 @@ public sealed class AddonDialogueWatcher : IDisposable
         lastDisplay = string.Empty;
 
         PushBusy(speaker, english, source, usedNodeId);
-        if (Plugin.Configuration.ReplaceNativeDialogue && NeedsGameFontOverlay())
+        if (NeedsGameFontOverlay())
             HideBodyText(addonName, usedNodeId);
         var captured = english;
         var capturedSpeaker = speaker;
@@ -271,8 +268,7 @@ public sealed class AddonDialogueWatcher : IDisposable
                 lastDisplay = display;
             }
 
-            if (Plugin.Configuration.ReplaceNativeDialogue)
-                ApplyNativeBody(capturedAddon, capturedNode, display);
+            ApplyNativeBody(capturedAddon, capturedNode, display);
 
             if (Plugin.Configuration.LogTranslations)
                 Plugin.Log.Information($"[{capturedSource}] {captured} => {translated}");
@@ -419,7 +415,7 @@ public sealed class AddonDialogueWatcher : IDisposable
 
     private unsafe void ShowTranslatingPlaceholder(string source, string addonName, uint speakerNodeId, uint bodyNodeId, string english)
     {
-        if (!Plugin.Configuration.ReplaceNativeDialogue || !NeedsGameFontOverlay())
+        if (!NeedsGameFontOverlay())
             return;
 
         var speaker = string.Empty;
@@ -469,8 +465,6 @@ public sealed class AddonDialogueWatcher : IDisposable
             lastKey = source + "||" + english;
         }
 
-        if (!Plugin.Configuration.ReplaceNativeDialogue)
-            return;
         if (TargetLanguages.IsBusyPlaceholder(translation))
             return;
 
@@ -510,7 +504,7 @@ public sealed class AddonDialogueWatcher : IDisposable
         var nodeId = bodyNodeId != 0 ? bodyNodeId : map.Value.BodyNodeId;
         var node = addon->GetTextNodeById(nodeId);
         var vpW = ImGuiHelpers.MainViewport.WorkSize.X;
-        var minW = vpW > 200f ? Math.Min(560f, vpW * 0.48f) : 480f;
+        var minW = vpW > 200f ? Math.Min(720f, vpW * 0.58f) : 520f;
         var minH = source == "TalkSubtitle" ? 56f : 100f;
 
         if (node is not null && (node->ScreenX > 8f || node->ScreenY > 8f))
@@ -537,8 +531,8 @@ public sealed class AddonDialogueWatcher : IDisposable
             pixelH = Math.Max(minH, node->Height * scale.Y);
         }
 
-        if (vpW > 200f && pixelW > vpW * 0.62f)
-            pixelW = vpW * 0.52f;
+        if (vpW > 200f && pixelW > vpW * 0.72f)
+            pixelW = vpW * 0.68f;
         if (pixelH > 260f)
             pixelH = 260f;
 
@@ -568,9 +562,7 @@ public sealed class AddonDialogueWatcher : IDisposable
         if (!lang.RightToLeft)
             return translation;
 
-        var wrap = Plugin.Configuration.OverlayWrapChars > 0
-            ? Plugin.Configuration.OverlayWrapChars
-            : 42;
+        const int wrap = 42;
         var lines = DialogueDisplay.LinesForImGui(translation, wrap, true, lang.ArabicScript);
         return lines.Length == 0 ? translation : string.Join("\n", lines);
     }
@@ -636,6 +628,14 @@ public sealed class AddonDialogueWatcher : IDisposable
         var pin = GCHandle.Alloc(bytes, GCHandleType.Pinned);
         textPins[addonName] = pin;
         node->SetText((byte*)pin.AddrOfPinnedObject());
+
+        var cfg = Plugin.Configuration;
+        var col = cfg.BalloonTextColor;
+        node->TextColor.R = (byte)Math.Clamp((int)(col.X * 255f), 0, 255);
+        node->TextColor.G = (byte)Math.Clamp((int)(col.Y * 255f), 0, 255);
+        node->TextColor.B = (byte)Math.Clamp((int)(col.Z * 255f), 0, 255);
+        node->TextColor.A = (byte)Math.Clamp((int)(col.W * 255f), 0, 255);
+        node->FontSize = (byte)Math.Clamp(cfg.BalloonFontSize * 0.55f, 12f, 28f);
 
         var lang = TargetLanguages.Current();
         if (lang.RightToLeft)

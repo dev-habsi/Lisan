@@ -2,6 +2,9 @@
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
   <PropertyGroup>
     <Version>0.4.0.0</Version>
+    <AssemblyName>Lisan</AssemblyName>
+    <RootNamespace>Lisan</RootNamespace>
+    <InternalName>Lisan</InternalName>
     <Author>ALHABSI</Author>
     <Name>Lisan</Name>
     <Punchline>Hear Eorzea in your own tongue. Offline dialogue translation, made with love at habsi.net.</Punchline>
