@@ -81,8 +81,6 @@ public static class TargetLanguages
         Lang("ar", "Arabic", "Helsinki-NLP/opus-mt-en-ar", "opus-mt-en-ar",
             rtl: true, arabic: true, busy: "جاري الترجمة…",
             font: "NotoNaskhArabic-Regular.ttf", glyphs: ArabicGlyphs),
-        Lang("fr", "French", "Helsinki-NLP/opus-mt-en-fr", "opus-mt-en-fr",
-            busy: "Traduction…"),
         Lang("de", "German", "Helsinki-NLP/opus-mt-en-de", "opus-mt-en-de",
             busy: "Übersetzung…"),
         Lang("es", "Spanish", "Helsinki-NLP/opus-mt-en-es", "opus-mt-en-es",

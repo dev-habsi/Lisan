@@ -57,7 +57,7 @@ public sealed class Plugin : IDalamudPlugin
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = $"Toggle {Brand.Name}. '{Brand.Command} config' | '{Brand.Command} lang fr' | '{Brand.Command} test'",
+            HelpMessage = $"Toggle {Brand.Name}. '{Brand.Command} config' | '{Brand.Command} lang ar' | '{Brand.Command} test'",
         });
         CommandManager.AddHandler(LegacyCommandName, new CommandInfo(OnCommand)
         {
@@ -164,7 +164,7 @@ public sealed class Plugin : IDalamudPlugin
         if (string.IsNullOrWhiteSpace(code))
         {
             var cur = TargetLanguages.Current();
-            Log.Information($"{Brand.Name} language: {cur.Code} ({cur.Name}). Example: {Brand.Command} lang fr");
+            Log.Information($"{Brand.Name} language: {cur.Code} ({cur.Name}). Example: {Brand.Command} lang ar");
             return;
         }
 

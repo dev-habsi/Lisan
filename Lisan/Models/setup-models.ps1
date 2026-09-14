@@ -1,7 +1,7 @@
 # One-time local model + font setup for Lisan (no translation cloud API).
 # Examples:
 #   .\setup-models.ps1
-#   .\setup-models.ps1 -Language fr
+#   .\setup-models.ps1 -Language ar
 #   .\setup-models.ps1 -Language ja
 #   .\setup-models.ps1 -Language zh -Repo Helsinki-NLP/opus-mt-en-zh
 param(
@@ -17,7 +17,6 @@ $Python = if (-not [string]::IsNullOrWhiteSpace($env:LISAN_PYTHON)) { $env:LISAN
 # code = @{ Repo; Folder; FontFile; FontUrl }
 $Packs = @{
     ar = @{ Repo = "Helsinki-NLP/opus-mt-en-ar"; Folder = "opus-mt-en-ar"; FontFile = "NotoNaskhArabic-Regular.ttf"; FontUrl = "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoNaskhArabic/NotoNaskhArabic-Regular.ttf" }
-    fr = @{ Repo = "Helsinki-NLP/opus-mt-en-fr"; Folder = "opus-mt-en-fr" }
     de = @{ Repo = "Helsinki-NLP/opus-mt-en-de"; Folder = "opus-mt-en-de" }
     es = @{ Repo = "Helsinki-NLP/opus-mt-en-es"; Folder = "opus-mt-en-es" }
     it = @{ Repo = "Helsinki-NLP/opus-mt-en-it"; Folder = "opus-mt-en-it" }

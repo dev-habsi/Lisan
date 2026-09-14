@@ -65,7 +65,7 @@ public sealed class ConfigWindow : Window
         }
 
         ImGui.Separator();
-        ImGui.TextDisabled($"{Brand.Command}   ·   {Brand.Command} config   ·   {Brand.Command} lang fr   ·   {Brand.Command} test");
+        ImGui.TextDisabled($"{Brand.Command}   ·   {Brand.Command} config   ·   {Brand.Command} lang ar   ·   {Brand.Command} test");
         ImGui.Spacing();
         ImGui.TextDisabled("Made with love at");
         ImGui.SameLine();

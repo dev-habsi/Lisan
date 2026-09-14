@@ -3,7 +3,7 @@
 #
 # Double-click Install-Lisan.cmd  or:
 #   .\Install-Lisan.ps1
-#   .\Install-Lisan.ps1 -Language fr
+#   .\Install-Lisan.ps1 -Language ar
 #   .\Install-Lisan.ps1 -ForceModel
 param(
     [string]$Language = "ar",
@@ -53,7 +53,7 @@ function Get-PythonExe {
 
 function Test-ModelPresent([string]$code) {
     $known = @{
-        ar = "opus-mt-en-ar"; fr = "opus-mt-en-fr"; de = "opus-mt-en-de"; es = "opus-mt-en-es"
+        ar = "opus-mt-en-ar"; de = "opus-mt-en-de"; es = "opus-mt-en-es"
         it = "opus-mt-en-it"; pt = "opus-mt-tc-big-en-pt"; nl = "opus-mt-en-nl"; pl = "opus-mt-en-pl"
         ru = "opus-mt-en-ru"; uk = "opus-mt-en-uk"; tr = "opus-mt-en-tr"; sv = "opus-mt-en-sv"
         da = "opus-mt-en-da"; fi = "opus-mt-en-fi"; cs = "opus-mt-en-cs"; ro = "opus-mt-en-ro"
@@ -280,5 +280,5 @@ Write-Host "  3. /lisan config  -> language = $Language"
 Write-Host "  4. Game client language = English"
 Write-Host ""
 Write-Host "Other language later:"
-Write-Host "  .\Install-Lisan.ps1 -Language fr"
-Write-Host "  /lisan lang fr"
+Write-Host "  .\Install-Lisan.ps1 -Language <code>"
+Write-Host "  /lisan lang <code>"

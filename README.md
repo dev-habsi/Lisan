@@ -6,7 +6,7 @@ Made with love at **[habsi.net](https://habsi.net)**.
 
 Hooks **Talk**, **BattleTalk**, and **TalkSubtitle**, translates locally with **Helsinki-NLP Opus-MT** (nothing leaves your PC), and writes the line onto the balloon.
 
-Default language is **Arabic**. Pick French, Japanese, Chinese, or any built-in pack in **General → Target language**.
+Default language is **Arabic**. Pick Japanese, Chinese, or any built-in pack in **General → Target language**.
 
 **Current version:** 0.4.0  
 **Dalamud:** API 15 (`.NET 10`)  
@@ -23,7 +23,7 @@ cd D:\Dev\Lisan
 .\Install-Lisan.ps1
 ```
 
-Or double-click **`Install-Lisan.cmd`**. Other language: `.\Install-Lisan.ps1 -Language fr`. Redo model: `-ForceModel`.
+Or double-click **`Install-Lisan.cmd`**. Other language: `.\Install-Lisan.ps1 -Language ja`. Redo model: `-ForceModel`.
 
 Then log in with Dalamud, reload plugins if the game was already open, `/lisan config`. Game client language = **English**.
 
@@ -70,7 +70,6 @@ From the **source** `Models` folder (not only the bin copy — setup writes next
 cd D:\Dev\Lisan\Lisan\Models
 .\setup-models.ps1 -Language list          # see every built-in code
 .\setup-models.ps1 -Language ar            # Arabic (default)
-.\setup-models.ps1 -Language fr            # French
 .\setup-models.ps1 -Language ja            # Japanese (repo is opus-mt-en-jap)
 ```
 
@@ -123,7 +122,7 @@ Then:
 
 `/lisan` is unchanged; `/dialogar` still works as an alias.
 
-If status is `Model missing`, the folder with `config.json` + weights is not next to the loaded DLL. Run setup again and rebuild, or set **Custom model folder** to the absolute path of `Models\opus-mt-en-fr` (etc.).
+If status is `Model missing`, the folder with `config.json` + weights is not next to the loaded DLL. Run setup again and rebuild, or set **Custom model folder** to the absolute path of `Models\opus-mt-en-de` (etc.).
 
 ### 6. In-game balloon
 
@@ -155,7 +154,6 @@ Cache is stored **per language**. Old Arabic cache stays valid.
 | Code | Language | Hugging Face repo | Extra font |
 |------|----------|-------------------|------------|
 | `ar` | Arabic | `Helsinki-NLP/opus-mt-en-ar` | Noto Naskh Arabic |
-| `fr` | French | `Helsinki-NLP/opus-mt-en-fr` | — |
 | `de` | German | `Helsinki-NLP/opus-mt-en-de` | — |
 | `es` | Spanish | `Helsinki-NLP/opus-mt-en-es` | — |
 | `it` | Italian | `Helsinki-NLP/opus-mt-en-it` | — |
@@ -198,7 +196,7 @@ Every pack’s **token / font** lives in `TargetLanguages.cs`. Worker protocol a
 | `/lisan` | Toggle plugin on/off |
 | `/lisan config` | Open settings |
 | `/lisan lang` | Print current language |
-| `/lisan lang fr` | Switch language and restart the worker |
+| `/lisan lang ar` | Switch language and restart the worker |
 | `/lisan test` | Translate a sample line (Talk/BattleTalk must be open) |
 | `/dialogar` | Same commands (old name, still works) |
 

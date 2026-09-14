@@ -49,7 +49,8 @@ public class Configuration : IPluginConfiguration
 
     public void Migrate()
     {
-        if (string.Equals(TargetLanguage, "he", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(TargetLanguage, "he", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(TargetLanguage, "fr", StringComparison.OrdinalIgnoreCase))
             TargetLanguage = "ar";
 
         if (Version < 8)
