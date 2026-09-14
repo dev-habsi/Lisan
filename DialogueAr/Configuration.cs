@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Configuration;
 
@@ -12,8 +11,6 @@ public class Configuration : IPluginConfiguration
 
     /// <summary>ISO-ish code from <see cref="TargetLanguages"/>, or "custom". Default Arabic (existing installs).</summary>
     public string TargetLanguage { get; set; } = "ar";
-    /// <summary>Used when TargetLanguage is custom. Example: ja-JP, fr-FR.</summary>
-    public string CustomTtsCulture { get; set; } = "";
     public bool CustomRightToLeft { get; set; }
     /// <summary>Optional Opus-MT token for custom models, e.g. &gt;&gt;cmn_Hans&lt;&lt;.</summary>
     public string CustomTargetToken { get; set; } = "";
@@ -46,26 +43,6 @@ public class Configuration : IPluginConfiguration
     public float OverlayPosY { get; set; } = 620f;
     public bool OverlayPosSaved { get; set; }
 
-    // ── TTS ──────────────────────────────────────────────────
-    public bool EnableTts { get; set; } = true;
-    /// <summary>Empty = Auto pick male/female voice. Otherwise exact Windows voice name.</summary>
-    public string TtsVoiceName { get; set; } = "";
-    /// <summary>Used when TtsVoiceName is Auto: Auto from speaker, or force Female/Male.</summary>
-    public TtsVoiceGender TtsVoiceGender { get; set; } = TtsVoiceGender.Auto;
-    public int TtsVolume { get; set; } = 100;
-    /// <summary>System.Speech / SSML rate (-10..10).</summary>
-    public int TtsRate { get; set; } = 3;
-    /// <summary>When true, new lines queue after current speech. When false, cut to the new line.</summary>
-    public bool TtsQueueLines { get; set; } = true;
-    /// <summary>Stop speaking when the Talk box closes.</summary>
-    public bool TtsStopWhenDialogueCloses { get; set; } = false;
-    /// <summary>Skip re-speaking the exact same Arabic text.</summary>
-    public bool TtsSkipDuplicates { get; set; } = true;
-    public bool TtsWarmupOnLoad { get; set; } = true;
-
-    /// <summary>Per character-name voice overrides (wins over global Auto/manual).</summary>
-    public List<CharacterVoiceOverride> CharacterVoices { get; set; } = new();
-
     // ── Translator ───────────────────────────────────────────
     public string ModelDirectory { get; set; } = string.Empty;
     /// <summary>Greedy decode (faster). Off = 2 beams (slightly better quality, slower).</summary>
@@ -85,37 +62,6 @@ public class Configuration : IPluginConfiguration
             OverlayTextB = value.Z;
             OverlayTextA = value.W;
         }
-    }
-
-    /// <summary>Find a voice override for a Talk speaker name (exact, then first-name).</summary>
-    public string? FindCharacterVoice(string? speakerName)
-    {
-        if (string.IsNullOrWhiteSpace(speakerName) || CharacterVoices.Count == 0)
-            return null;
-
-        var name = speakerName.Trim();
-        foreach (var row in CharacterVoices)
-        {
-            if (string.IsNullOrWhiteSpace(row.SpeakerName) || string.IsNullOrWhiteSpace(row.VoiceName))
-                continue;
-            if (row.SpeakerName.Trim().Equals(name, StringComparison.OrdinalIgnoreCase))
-                return row.VoiceName.Trim();
-        }
-
-        var first = name.Split(' ', 2)[0];
-        foreach (var row in CharacterVoices)
-        {
-            if (string.IsNullOrWhiteSpace(row.SpeakerName) || string.IsNullOrWhiteSpace(row.VoiceName))
-                continue;
-            var key = row.SpeakerName.Trim();
-            var keyFirst = key.Split(' ', 2)[0];
-            if (key.Equals(first, StringComparison.OrdinalIgnoreCase)
-                || keyFirst.Equals(name, StringComparison.OrdinalIgnoreCase)
-                || keyFirst.Equals(first, StringComparison.OrdinalIgnoreCase))
-                return row.VoiceName.Trim();
-        }
-
-        return null;
     }
 
     public void Save() => Plugin.PluginInterface.SavePluginConfig(this);

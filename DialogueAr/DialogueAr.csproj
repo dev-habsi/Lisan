@@ -5,8 +5,8 @@
     <Author>ALHABSI</Author>
     <Name>DialogueAr</Name>
     <Punchline>Offline English→any-language dialogue translator for Talk, BattleTalk, and cutscenes.</Punchline>
-    <Description>Hooks Talk, BattleTalk, and TalkSubtitle, translates English dialogue locally with Helsinki-NLP Opus-MT on disk (Arabic, French, Japanese, and many more — no cloud translation API), and shows an ImGui overlay with optional TTS.</Description>
-    <Tags>translation;dialogue;offline;tts;arabic;accessibility</Tags>
+    <Description>Hooks Talk, BattleTalk, and TalkSubtitle, translates English dialogue locally with Helsinki-NLP Opus-MT on disk (Arabic, French, Japanese, and many more — no cloud translation API), and shows an ImGui overlay.</Description>
+    <Tags>translation;dialogue;offline;arabic;accessibility</Tags>
     <CategoryTags>ui;utility</CategoryTags>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -48,6 +48,5 @@
 
   <ItemGroup>
     <PackageReference Include="ArabicRt" Version="0.1.1" />
-    <PackageReference Include="System.Speech" Version="9.0.0" />
   </ItemGroup>
 </Project>

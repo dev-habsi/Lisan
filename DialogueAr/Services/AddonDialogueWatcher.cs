@@ -283,7 +283,6 @@ public sealed class AddonDialogueWatcher : IDisposable
             if (Plugin.Configuration.ReplaceNativeDialogue)
                 ApplyNativeBody(capturedAddon, capturedNode, display, overlayPainted: true);
 
-            Plugin.Tts.Speak(translated, capturedSpeaker);
             if (Plugin.Configuration.LogTranslations)
                 Plugin.Log.Information($"[{capturedSource}] {captured} => {translated}");
         }
@@ -307,7 +306,7 @@ public sealed class AddonDialogueWatcher : IDisposable
             }
             catch (Exception ex)
             {
-                Plugin.Log.Warning(ex, "DialogueAr translate/TTS failed");
+                Plugin.Log.Warning(ex, "DialogueAr translate failed");
                 _ = Plugin.Framework.RunOnFrameworkThread(() =>
                 {
                     RestoreBodyText(capturedAddon, capturedNode);
@@ -346,8 +345,6 @@ public sealed class AddonDialogueWatcher : IDisposable
                 lastSeenSource = string.Empty;
                 lastBodyNodeId = 0;
                 unseenFrames = 0;
-                if (Plugin.Configuration.TtsStopWhenDialogueCloses)
-                    Plugin.Tts.Stop();
             }
         }
     }

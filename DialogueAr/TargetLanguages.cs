@@ -14,12 +14,10 @@ public sealed class TargetLanguageInfo
     public required string ModelFolder { get; init; }
     public bool RightToLeft { get; init; }
     public bool ArabicScript { get; init; }
-    public string TtsCulture { get; init; } = "en-US";
     public string BusyText { get; init; } = "Translating…";
     /// <summary>Optional Opus-MT / TC target token prepended to source (e.g. &gt;&gt;cmn_Hans&lt;&lt;).</summary>
     public string TargetToken { get; init; } = "";
     public string? FontFile { get; init; }
-    public string? WindowsTtsCapability { get; init; }
     public ushort[]? GlyphRanges { get; init; }
 
     public string Label => $"{Name}  ({Code})";
@@ -89,75 +87,68 @@ public static class TargetLanguages
     public static readonly TargetLanguageInfo[] All =
     [
         Lang("ar", "Arabic", "Helsinki-NLP/opus-mt-en-ar", "opus-mt-en-ar",
-            rtl: true, arabic: true, tts: "ar-SA", busy: "جاري الترجمة…",
-            font: "NotoNaskhArabic-Regular.ttf", cap: "Language.TextToSpeech~~~ar-SA~0.0.1.0",
-            glyphs: ArabicGlyphs),
+            rtl: true, arabic: true, busy: "جاري الترجمة…",
+            font: "NotoNaskhArabic-Regular.ttf", glyphs: ArabicGlyphs),
         Lang("fr", "French", "Helsinki-NLP/opus-mt-en-fr", "opus-mt-en-fr",
-            tts: "fr-FR", busy: "Traduction…", cap: "Language.TextToSpeech~~~fr-FR~0.0.1.0"),
+            busy: "Traduction…"),
         Lang("de", "German", "Helsinki-NLP/opus-mt-en-de", "opus-mt-en-de",
-            tts: "de-DE", busy: "Übersetzung…", cap: "Language.TextToSpeech~~~de-DE~0.0.1.0"),
+            busy: "Übersetzung…"),
         Lang("es", "Spanish", "Helsinki-NLP/opus-mt-en-es", "opus-mt-en-es",
-            tts: "es-ES", busy: "Traduciendo…", cap: "Language.TextToSpeech~~~es-ES~0.0.1.0"),
+            busy: "Traduciendo…"),
         Lang("it", "Italian", "Helsinki-NLP/opus-mt-en-it", "opus-mt-en-it",
-            tts: "it-IT", busy: "Traduzione…", cap: "Language.TextToSpeech~~~it-IT~0.0.1.0"),
+            busy: "Traduzione…"),
         Lang("pt", "Portuguese", "Helsinki-NLP/opus-mt-tc-big-en-pt", "opus-mt-tc-big-en-pt",
-            tts: "pt-BR", busy: "Traduzindo…", token: ">>por<<", cap: "Language.TextToSpeech~~~pt-BR~0.0.1.0"),
+            busy: "Traduzindo…", token: ">>por<<"),
         Lang("nl", "Dutch", "Helsinki-NLP/opus-mt-en-nl", "opus-mt-en-nl",
-            tts: "nl-NL", busy: "Vertalen…", cap: "Language.TextToSpeech~~~nl-NL~0.0.1.0"),
+            busy: "Vertalen…"),
         Lang("pl", "Polish", "Helsinki-NLP/opus-mt-en-pl", "opus-mt-en-pl",
-            tts: "pl-PL", busy: "Tłumaczenie…", cap: "Language.TextToSpeech~~~pl-PL~0.0.1.0"),
+            busy: "Tłumaczenie…"),
         Lang("ru", "Russian", "Helsinki-NLP/opus-mt-en-ru", "opus-mt-en-ru",
-            tts: "ru-RU", busy: "Перевод…", cap: "Language.TextToSpeech~~~ru-RU~0.0.1.0"),
+            busy: "Перевод…"),
         Lang("uk", "Ukrainian", "Helsinki-NLP/opus-mt-en-uk", "opus-mt-en-uk",
-            tts: "uk-UA", busy: "Переклад…", cap: "Language.TextToSpeech~~~uk-UA~0.0.1.0"),
+            busy: "Переклад…"),
         Lang("tr", "Turkish", "Helsinki-NLP/opus-mt-en-tr", "opus-mt-en-tr",
-            tts: "tr-TR", busy: "Çeviriliyor…", cap: "Language.TextToSpeech~~~tr-TR~0.0.1.0"),
+            busy: "Çeviriliyor…"),
         Lang("sv", "Swedish", "Helsinki-NLP/opus-mt-en-sv", "opus-mt-en-sv",
-            tts: "sv-SE", busy: "Översätter…", cap: "Language.TextToSpeech~~~sv-SE~0.0.1.0"),
+            busy: "Översätter…"),
         Lang("da", "Danish", "Helsinki-NLP/opus-mt-en-da", "opus-mt-en-da",
-            tts: "da-DK", busy: "Oversætter…", cap: "Language.TextToSpeech~~~da-DK~0.0.1.0"),
+            busy: "Oversætter…"),
         Lang("fi", "Finnish", "Helsinki-NLP/opus-mt-en-fi", "opus-mt-en-fi",
-            tts: "fi-FI", busy: "Käännetään…", cap: "Language.TextToSpeech~~~fi-FI~0.0.1.0"),
+            busy: "Käännetään…"),
         Lang("cs", "Czech", "Helsinki-NLP/opus-mt-en-cs", "opus-mt-en-cs",
-            tts: "cs-CZ", busy: "Překládání…", cap: "Language.TextToSpeech~~~cs-CZ~0.0.1.0"),
+            busy: "Překládání…"),
         Lang("ro", "Romanian", "Helsinki-NLP/opus-mt-en-ro", "opus-mt-en-ro",
-            tts: "ro-RO", busy: "Se traduce…", cap: "Language.TextToSpeech~~~ro-RO~0.0.1.0"),
+            busy: "Se traduce…"),
         Lang("hu", "Hungarian", "Helsinki-NLP/opus-mt-en-hu", "opus-mt-en-hu",
-            tts: "hu-HU", busy: "Fordítás…", cap: "Language.TextToSpeech~~~hu-HU~0.0.1.0"),
+            busy: "Fordítás…"),
         Lang("el", "Greek", "Helsinki-NLP/opus-mt-en-el", "opus-mt-en-el",
-            tts: "el-GR", busy: "Μετάφραση…", cap: "Language.TextToSpeech~~~el-GR~0.0.1.0"),
+            busy: "Μετάφραση…"),
         Lang("bg", "Bulgarian", "Helsinki-NLP/opus-mt-en-bg", "opus-mt-en-bg",
-            tts: "bg-BG", busy: "Превод…", cap: "Language.TextToSpeech~~~bg-BG~0.0.1.0"),
+            busy: "Превод…"),
         Lang("ja", "Japanese", "Helsinki-NLP/opus-mt-en-jap", "opus-mt-en-jap",
-            tts: "ja-JP", busy: "翻訳中…", font: "NotoSansCJKjp-Regular.otf",
-            cap: "Language.TextToSpeech~~~ja-JP~0.0.1.0", glyphs: CjkGlyphs),
+            busy: "翻訳中…", font: "NotoSansCJKjp-Regular.otf", glyphs: CjkGlyphs),
         Lang("zh", "Chinese (Simplified)", "Helsinki-NLP/opus-mt-en-zh", "opus-mt-en-zh",
-            tts: "zh-CN", busy: "翻译中…", token: ">>cmn_Hans<<",
-            font: "NotoSansCJKsc-Regular.otf", cap: "Language.TextToSpeech~~~zh-CN~0.0.1.0",
-            glyphs: CjkGlyphs),
+            busy: "翻译中…", token: ">>cmn_Hans<<",
+            font: "NotoSansCJKsc-Regular.otf", glyphs: CjkGlyphs),
         Lang("ko", "Korean", "Helsinki-NLP/opus-mt-tc-big-en-ko", "opus-mt-tc-big-en-ko",
-            tts: "ko-KR", busy: "번역 중…", token: ">>kor<<",
-            font: "NotoSansCJKkr-Regular.otf", cap: "Language.TextToSpeech~~~ko-KR~0.0.1.0",
-            glyphs: CjkGlyphs),
+            busy: "번역 중…", token: ">>kor<<",
+            font: "NotoSansCJKkr-Regular.otf", glyphs: CjkGlyphs),
         Lang("vi", "Vietnamese", "Helsinki-NLP/opus-mt-en-vi", "opus-mt-en-vi",
-            tts: "vi-VN", busy: "Đang dịch…", cap: "Language.TextToSpeech~~~vi-VN~0.0.1.0"),
+            busy: "Đang dịch…"),
         Lang("id", "Indonesian", "Helsinki-NLP/opus-mt-en-id", "opus-mt-en-id",
-            tts: "id-ID", busy: "Menerjemahkan…", cap: "Language.TextToSpeech~~~id-ID~0.0.1.0"),
+            busy: "Menerjemahkan…"),
         Lang("he", "Hebrew", "Helsinki-NLP/opus-mt-en-he", "opus-mt-en-he",
-            rtl: true, tts: "he-IL", busy: "מתרגם…",
-            font: "NotoSansHebrew-Regular.ttf", cap: "Language.TextToSpeech~~~he-IL~0.0.1.0",
-            glyphs: HebrewGlyphs),
+            rtl: true, busy: "מתרגם…",
+            font: "NotoSansHebrew-Regular.ttf", glyphs: HebrewGlyphs),
         Lang("fa", "Persian", "Helsinki-NLP/opus-mt-en-fa", "opus-mt-en-fa",
-            rtl: true, arabic: true, tts: "fa-IR", busy: "در حال ترجمه…",
+            rtl: true, arabic: true, busy: "در حال ترجمه…",
             font: "NotoNaskhArabic-Regular.ttf", glyphs: ArabicGlyphs),
         Lang("hi", "Hindi", "Helsinki-NLP/opus-mt-en-hi", "opus-mt-en-hi",
-            tts: "hi-IN", busy: "अनुवाद हो रहा है…",
-            font: "NotoSansDevanagari-Regular.ttf", cap: "Language.TextToSpeech~~~hi-IN~0.0.1.0",
-            glyphs: DevanagariGlyphs),
+            busy: "अनुवाद हो रहा है…",
+            font: "NotoSansDevanagari-Regular.ttf", glyphs: DevanagariGlyphs),
         Lang("th", "Thai", "Helsinki-NLP/opus-mt-en-th", "opus-mt-en-th",
-            tts: "th-TH", busy: "กำลังแปล…",
-            font: "NotoSansThai-Regular.ttf", cap: "Language.TextToSpeech~~~th-TH~0.0.1.0",
-            glyphs: ThaiGlyphs),
+            busy: "กำลังแปล…",
+            font: "NotoSansThai-Regular.ttf", glyphs: ThaiGlyphs),
     ];
 
     public static readonly TargetLanguageInfo Custom = new()
@@ -166,7 +157,6 @@ public static class TargetLanguages
         Name = "Custom model folder",
         HuggingFaceRepo = "",
         ModelFolder = "",
-        TtsCulture = "en-US",
         BusyText = "Translating…",
     };
 
@@ -210,9 +200,6 @@ public static class TargetLanguages
         if (c == CustomCode)
         {
             var cfg = Plugin.Configuration;
-            var culture = string.IsNullOrWhiteSpace(cfg.CustomTtsCulture)
-                ? "en-US"
-                : cfg.CustomTtsCulture.Trim();
             return new TargetLanguageInfo
             {
                 Code = CustomCode,
@@ -220,8 +207,7 @@ public static class TargetLanguages
                 HuggingFaceRepo = "",
                 ModelFolder = "",
                 RightToLeft = cfg.CustomRightToLeft,
-                ArabicScript = cfg.CustomRightToLeft && LooksArabicScriptCulture(culture),
-                TtsCulture = culture,
+                ArabicScript = cfg.CustomRightToLeft,
                 BusyText = "Translating…",
                 TargetToken = (cfg.CustomTargetToken ?? "").Trim(),
             };
@@ -239,7 +225,6 @@ public static class TargetLanguages
             Name = c.ToUpperInvariant(),
             HuggingFaceRepo = "Helsinki-NLP/opus-mt-en-" + c,
             ModelFolder = "opus-mt-en-" + c,
-            TtsCulture = GuessCulture(c),
             BusyText = "Translating…",
         };
     }
@@ -269,17 +254,6 @@ public static class TargetLanguages
         return code.Trim().ToLowerInvariant();
     }
 
-    private static bool LooksArabicScriptCulture(string culture) =>
-        culture.StartsWith("ar", StringComparison.OrdinalIgnoreCase)
-        || culture.StartsWith("fa", StringComparison.OrdinalIgnoreCase)
-        || culture.StartsWith("ur", StringComparison.OrdinalIgnoreCase);
-
-    private static string GuessCulture(string code) => code switch
-    {
-        "en" => "en-US",
-        _ => code + "-" + code.ToUpperInvariant(),
-    };
-
     private static TargetLanguageInfo Lang(
         string code,
         string name,
@@ -287,11 +261,9 @@ public static class TargetLanguages
         string folder,
         bool rtl = false,
         bool arabic = false,
-        string tts = "en-US",
         string busy = "Translating…",
         string token = "",
         string? font = null,
-        string? cap = null,
         ushort[]? glyphs = null) =>
         new()
         {
@@ -301,11 +273,9 @@ public static class TargetLanguages
             ModelFolder = folder,
             RightToLeft = rtl,
             ArabicScript = arabic,
-            TtsCulture = tts,
             BusyText = busy,
             TargetToken = token,
             FontFile = font,
-            WindowsTtsCapability = cap,
             GlyphRanges = glyphs,
         };
 }

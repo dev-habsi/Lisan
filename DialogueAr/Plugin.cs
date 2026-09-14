@@ -20,13 +20,10 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IGameGui GameGui { get; private set; } = null!;
     [PluginService] internal static IFramework Framework { get; private set; } = null!;
     [PluginService] internal static IPluginLog Log { get; private set; } = null!;
-    [PluginService] internal static IObjectTable ObjectTable { get; private set; } = null!;
-    [PluginService] internal static ITargetManager TargetManager { get; private set; } = null!;
 
     private const string CommandName = "/dialogar";
 
     public static Configuration Configuration { get; private set; } = null!;
-    public static DialogueTtsService Tts { get; private set; } = null!;
 
     public TranslationCache Cache { get; }
     public LocalTranslator Translator { get; }
@@ -40,7 +37,6 @@ public sealed class Plugin : IDalamudPlugin
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         Configuration.MigrateOverlayTheme();
-        Tts = new DialogueTtsService();
 
         var pluginDir = PluginInterface.AssemblyLocation.Directory?.FullName
                         ?? AppContext.BaseDirectory;
@@ -59,7 +55,7 @@ public sealed class Plugin : IDalamudPlugin
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Toggle DialogueAr. '/dialogar config' | '/dialogar lang <code>' | '/dialogar test' | '/dialogar stop'",
+            HelpMessage = "Toggle DialogueAr. '/dialogar config' | '/dialogar lang <code>' | '/dialogar test'",
         });
 
         PluginInterface.UiBuilder.Draw += WindowSystem.Draw;
@@ -82,12 +78,6 @@ public sealed class Plugin : IDalamudPlugin
                 }
                 catch (Exception ex) { Log.Warning(ex, "Translator warm-up failed"); }
             }
-
-            if (Configuration.TtsWarmupOnLoad && Configuration.EnableTts)
-            {
-                try { Tts.EnsureReady(); }
-                catch (Exception ex) { Log.Warning(ex, "TTS warm-up failed"); }
-            }
         });
 
         var lang = TargetLanguages.Current();
@@ -105,7 +95,6 @@ public sealed class Plugin : IDalamudPlugin
         ConfigWindow.Dispose();
         Overlay.Dispose();
         Watcher.Dispose();
-        Tts.Dispose();
         Translator.Dispose();
         Cache.Dispose();
         CommandManager.RemoveHandler(CommandName);
@@ -115,7 +104,6 @@ public sealed class Plugin : IDalamudPlugin
     public void ApplyLanguage()
     {
         Watcher.Clear();
-        Tts.Stop();
         Translator.Restart();
         Overlay.ReloadFont();
 
@@ -156,9 +144,6 @@ public sealed class Plugin : IDalamudPlugin
                 break;
             case "test":
                 RunTestTranslation();
-                break;
-            case "stop":
-                Tts.Stop();
                 break;
             default:
                 Configuration.Enabled = !Configuration.Enabled;
@@ -206,7 +191,6 @@ public sealed class Plugin : IDalamudPlugin
             _ = Framework.RunOnFrameworkThread(() =>
             {
                 Watcher.SetTestLineForSource(source, sample, translated);
-                Tts.Speak(translated, ObjectTable.LocalPlayer?.Name.TextValue);
             });
         });
     }

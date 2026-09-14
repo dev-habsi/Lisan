@@ -10,9 +10,6 @@ public sealed class ConfigWindow : Window, IDisposable
     private readonly Plugin plugin;
     private string modelDirEdit = string.Empty;
     private bool modelDirLoaded;
-    private string newCharName = string.Empty;
-    private int newCharVoiceIndex;
-    private string customCultureEdit = string.Empty;
     private string customTokenEdit = string.Empty;
     private bool customFieldsLoaded;
 
@@ -20,7 +17,7 @@ public sealed class ConfigWindow : Window, IDisposable
         : base("DialogueAr Settings###DialogueArConfig")
     {
         this.plugin = plugin;
-        Size = new Vector2(500, 640);
+        Size = new Vector2(500, 560);
         SizeCondition = ImGuiCond.FirstUseEver;
     }
 
@@ -37,7 +34,6 @@ public sealed class ConfigWindow : Window, IDisposable
 
         if (!customFieldsLoaded)
         {
-            customCultureEdit = cfg.CustomTtsCulture;
             customTokenEdit = cfg.CustomTargetToken;
             customFieldsLoaded = true;
         }
@@ -60,18 +56,6 @@ public sealed class ConfigWindow : Window, IDisposable
                 ImGui.EndTabItem();
             }
 
-            if (ImGui.BeginTabItem("Speech"))
-            {
-                DrawSpeech(cfg);
-                ImGui.EndTabItem();
-            }
-
-            if (ImGui.BeginTabItem("Characters"))
-            {
-                DrawCharacters(cfg);
-                ImGui.EndTabItem();
-            }
-
             if (ImGui.BeginTabItem("Translator"))
             {
                 DrawTranslator(cfg);
@@ -88,7 +72,7 @@ public sealed class ConfigWindow : Window, IDisposable
         }
 
         ImGui.Separator();
-        ImGui.TextDisabled("/dialogar  |  /dialogar config  |  /dialogar lang fr  |  /dialogar test  |  /dialogar stop");
+        ImGui.TextDisabled("/dialogar  |  /dialogar config  |  /dialogar lang fr  |  /dialogar test");
     }
 
     private void DrawGeneral(Configuration cfg)
@@ -117,13 +101,6 @@ public sealed class ConfigWindow : Window, IDisposable
         {
             ImGui.Spacing();
             ImGui.Text("Custom pack");
-            ImGui.SetNextItemWidth(160);
-            if (ImGui.InputText("TTS culture (e.g. ja-JP)", ref customCultureEdit, 16))
-            {
-                cfg.CustomTtsCulture = customCultureEdit.Trim();
-                cfg.Save();
-            }
-
             ImGui.SetNextItemWidth(160);
             if (ImGui.InputText("Opus token (optional)", ref customTokenEdit, 32))
             {
@@ -210,238 +187,6 @@ public sealed class ConfigWindow : Window, IDisposable
             cfg.Save();
             plugin.Overlay.ApplySavedPosition(force: true);
         }
-    }
-
-    private void DrawSpeech(Configuration cfg)
-    {
-        Toggle("Speak translation (Windows TTS)", () => cfg.EnableTts, v =>
-        {
-            cfg.EnableTts = v;
-            if (!v)
-                Plugin.Tts.Stop();
-            else
-            {
-                Plugin.Tts.EnsureReady();
-                Plugin.Tts.RefreshVoiceList();
-            }
-        });
-
-        var voices = Plugin.Tts.GetInstalledVoices();
-        // Index 0 = Auto; then every installed voice.
-        var labels = new string[voices.Length + 1];
-        labels[0] = "★ Auto (Male / Female by speaker)";
-        for (var i = 0; i < voices.Length; i++)
-            labels[i + 1] = voices[i].Label;
-
-        var selected = 0;
-        if (!string.IsNullOrWhiteSpace(cfg.TtsVoiceName))
-        {
-            for (var i = 0; i < voices.Length; i++)
-            {
-                if (voices[i].Name.Equals(cfg.TtsVoiceName, StringComparison.OrdinalIgnoreCase))
-                {
-                    selected = i + 1;
-                    break;
-                }
-            }
-        }
-
-        ImGui.SetNextItemWidth(-1);
-        if (ImGui.Combo("Voice", ref selected, labels, labels.Length))
-        {
-            cfg.TtsVoiceName = selected == 0 ? "" : voices[selected - 1].Name;
-            cfg.Save();
-        }
-
-        if (ImGui.Button("Refresh voice list"))
-            Plugin.Tts.RefreshVoiceList();
-
-        ImGui.SameLine();
-        ImGui.TextDisabled($"{voices.Length} installed");
-
-        var isAuto = string.IsNullOrWhiteSpace(cfg.TtsVoiceName);
-        if (isAuto)
-        {
-            var gender = (int)cfg.TtsVoiceGender;
-            var genders = new[] { "Auto (detect speaker sex)", "Prefer Female", "Prefer Male" };
-            if (ImGui.Combo("Auto gender", ref gender, genders, genders.Length))
-            {
-                cfg.TtsVoiceGender = (TtsVoiceGender)gender;
-                cfg.Save();
-            }
-
-            ImGui.TextDisabled("Auto picks target-language voice → Multilingual → any voice matching that gender.");
-        }
-        else
-        {
-            ImGui.TextDisabled("Manual voice locked. Switch to ★ Auto to use male/female selection.");
-        }
-
-        var vol = cfg.TtsVolume;
-        if (ImGui.SliderInt("Volume", ref vol, 0, 100))
-        {
-            cfg.TtsVolume = vol;
-            cfg.Save();
-        }
-
-        var rate = cfg.TtsRate;
-        if (ImGui.SliderInt("Speak rate (−10 slow … +10 fast)", ref rate, -10, 10))
-        {
-            cfg.TtsRate = rate;
-            cfg.Save();
-        }
-
-        if (ImGui.Button("Slower"))
-        {
-            cfg.TtsRate = Math.Clamp(cfg.TtsRate - 2, -10, 10);
-            cfg.Save();
-        }
-
-        ImGui.SameLine();
-        if (ImGui.Button("Faster"))
-        {
-            cfg.TtsRate = Math.Clamp(cfg.TtsRate + 2, -10, 10);
-            cfg.Save();
-        }
-
-        ImGui.SameLine();
-        if (ImGui.Button("Max rate"))
-        {
-            cfg.TtsRate = 10;
-            cfg.Save();
-        }
-
-        ImGui.Spacing();
-        Toggle("Queue lines (don’t cut previous)", () => cfg.TtsQueueLines, v => cfg.TtsQueueLines = v);
-        Toggle("Stop TTS when dialogue closes", () => cfg.TtsStopWhenDialogueCloses, v => cfg.TtsStopWhenDialogueCloses = v);
-        Toggle("Skip duplicate lines", () => cfg.TtsSkipDuplicates, v => cfg.TtsSkipDuplicates = v);
-        Toggle("Warm up TTS on plugin load", () => cfg.TtsWarmupOnLoad, v => cfg.TtsWarmupOnLoad = v);
-
-        if (ImGui.Button("Stop speech now"))
-            Plugin.Tts.Stop();
-
-        ImGui.TextDisabled(Plugin.Tts.Status);
-        var ttsLang = TargetLanguages.Current();
-        ImGui.TextDisabled($"Non-native voices use {ttsLang.TtsCulture} SSML. Install a matching Windows TTS pack for best quality.");
-        if (!string.IsNullOrWhiteSpace(ttsLang.WindowsTtsCapability))
-            ImGui.TextDisabled($"Admin PowerShell: Add-WindowsCapability -Online -Name {ttsLang.WindowsTtsCapability}");
-        ImGui.TextDisabled("Per-character voices: see Characters tab (they override this global voice).");
-    }
-
-    private void DrawCharacters(Configuration cfg)
-    {
-        ImGui.TextWrapped("Assign a Windows TTS voice to a Talk speaker name. Overrides global Auto/manual voice.");
-        ImGui.Spacing();
-
-        var line = plugin.Watcher.Current;
-        if (line is not null && !string.IsNullOrWhiteSpace(line.Speaker))
-        {
-            ImGui.Text($"Current speaker: {line.Speaker}");
-            if (ImGui.Button("Use current speaker name"))
-                newCharName = line.Speaker;
-            ImGui.SameLine();
-            var mapped = cfg.FindCharacterVoice(line.Speaker);
-            ImGui.TextDisabled(mapped is null ? "(no override)" : $"→ {mapped}");
-        }
-        else
-        {
-            ImGui.TextDisabled("No active dialogue speaker (open Talk to quick-fill).");
-        }
-
-        ImGui.Separator();
-        ImGui.Text("Add override");
-        ImGui.SetNextItemWidth(220);
-        ImGui.InputText("Character name", ref newCharName, 128);
-
-        var voices = Plugin.Tts.GetInstalledVoices();
-        if (voices.Length == 0)
-        {
-            ImGui.TextDisabled("No voices loaded yet — open Speech tab and Refresh.");
-            if (ImGui.Button("Refresh voices"))
-                Plugin.Tts.RefreshVoiceList();
-            return;
-        }
-
-        if (newCharVoiceIndex >= voices.Length)
-            newCharVoiceIndex = 0;
-
-        var voiceLabels = new string[voices.Length];
-        for (var i = 0; i < voices.Length; i++)
-            voiceLabels[i] = voices[i].Label;
-
-        ImGui.SetNextItemWidth(-1);
-        ImGui.Combo("Voice##charvoice", ref newCharVoiceIndex, voiceLabels, voiceLabels.Length);
-
-        if (ImGui.Button("Add / update"))
-        {
-            var name = newCharName.Trim();
-            if (!string.IsNullOrEmpty(name))
-            {
-                var voiceName = voices[newCharVoiceIndex].Name;
-                var existing = cfg.CharacterVoices.Find(r =>
-                    r.SpeakerName.Trim().Equals(name, StringComparison.OrdinalIgnoreCase));
-                if (existing is not null)
-                    existing.VoiceName = voiceName;
-                else
-                    cfg.CharacterVoices.Add(new CharacterVoiceOverride
-                    {
-                        SpeakerName = name,
-                        VoiceName = voiceName,
-                    });
-                cfg.Save();
-                newCharName = string.Empty;
-            }
-        }
-
-        ImGui.Separator();
-        ImGui.Text($"Overrides ({cfg.CharacterVoices.Count})");
-
-        CharacterVoiceOverride? remove = null;
-        for (var i = 0; i < cfg.CharacterVoices.Count; i++)
-        {
-            var row = cfg.CharacterVoices[i];
-            ImGui.PushID(i);
-
-            var speaker = row.SpeakerName;
-            ImGui.SetNextItemWidth(160);
-            if (ImGui.InputText("##spk", ref speaker, 128))
-                row.SpeakerName = speaker;
-
-            ImGui.SameLine();
-            var vIdx = 0;
-            for (var v = 0; v < voices.Length; v++)
-            {
-                if (voices[v].Name.Equals(row.VoiceName, StringComparison.OrdinalIgnoreCase))
-                {
-                    vIdx = v;
-                    break;
-                }
-            }
-
-            ImGui.SetNextItemWidth(280);
-            if (ImGui.Combo("##voz", ref vIdx, voiceLabels, voiceLabels.Length))
-            {
-                row.VoiceName = voices[vIdx].Name;
-                cfg.Save();
-            }
-
-            ImGui.SameLine();
-            if (ImGui.Button("X"))
-                remove = row;
-
-            ImGui.PopID();
-        }
-
-        if (remove is not null)
-        {
-            cfg.CharacterVoices.Remove(remove);
-            cfg.Save();
-        }
-
-        if (cfg.CharacterVoices.Count > 0 && ImGui.Button("Save name edits"))
-            cfg.Save();
-
-        ImGui.TextDisabled("Matches exact name, or first name (e.g. “Alphinaud” ↔ “Alphinaud Leveilleur”).");
     }
 
     private void DrawTranslator(Configuration cfg)

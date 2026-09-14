@@ -2,12 +2,9 @@
 
 Offline **English → any language** dialogue translator for Final Fantasy XIV (Dalamud).
 
-Hooks the game’s **Talk**, **BattleTalk**, and **TalkSubtitle** windows, translates lines locally with **Helsinki-NLP Opus-MT** (no cloud translation API), shows the result in a floating ImGui overlay, and can speak it with **Windows TTS**.
+Hooks the game’s **Talk**, **BattleTalk**, and **TalkSubtitle** windows, translates lines locally with **Helsinki-NLP Opus-MT** (no cloud translation API), and shows the result in the Talk balloon / an ImGui overlay.
 
 Default language is still **Arabic** so existing installs keep working. Pick French, Japanese, Chinese, or any built-in pack in **General → Target language**.
-
-**How TTS + models work (full internals):** [TTS-AND-MODELS.md](TTS-AND-MODELS.md)  
-STA thread, voice pick, SSML, Opus-MT folders, Python JSON protocol, cache keys, target tokens, every language’s TTS culture.
 
 **Current version:** 0.3.0  
 **Dalamud:** API 15 (`.NET 10`)  
@@ -81,7 +78,7 @@ Or copy `Models\<folder>` and `Fonts\` into the Release output yourself.
 .\setup-models.ps1 -Language xx -Repo Helsinki-NLP/opus-mt-en-xx
 ```
 
-Then in-game pick **Custom model folder**, set TTS culture (e.g. `ja-JP`), optional Opus token (`>>cmn_Hans<<` for some Chinese/TC models), and point Translator at that folder.
+Then in-game pick **Custom model folder**, optional Opus token (`>>cmn_Hans<<` for some Chinese/TC models), RTL if needed, and point Translator at that folder.
 
 ### 5. Load it in Dalamud
 
@@ -102,30 +99,7 @@ If status is `Model missing`, the folder with `config.json` + weights is not nex
 
 **Tofu / empty boxes** for Japanese, Chinese, Korean, Arabic, Hebrew, Hindi, Thai: font file missing. Re-run `setup-models.ps1 -Language <code>` and reload the plugin (font is loaded at apply/reload).
 
-### 7. Optional: Windows TTS
-
-1. Config → **Speech** → enable **Speak translation**.
-2. **★ Auto** picks a voice for the target language, then Multilingual (Ava / Emma / Andrew / Brian), then any gender match.
-3. Best quality: install a native TTS pack (Admin PowerShell). The Speech tab prints the exact capability name. Examples:
-
-```powershell
-Add-WindowsCapability -Online -Name Language.TextToSpeech~~~ar-SA~0.0.1.0
-Add-WindowsCapability -Online -Name Language.TextToSpeech~~~fr-FR~0.0.1.0
-Add-WindowsCapability -Online -Name Language.TextToSpeech~~~ja-JP~0.0.1.0
-Add-WindowsCapability -Online -Name Language.TextToSpeech~~~de-DE~0.0.1.0
-Add-WindowsCapability -Online -Name Language.TextToSpeech~~~es-ES~0.0.1.0
-Add-WindowsCapability -Online -Name Language.TextToSpeech~~~zh-CN~0.0.1.0
-Add-WindowsCapability -Online -Name Language.TextToSpeech~~~ko-KR~0.0.1.0
-```
-
-4. Then **Refresh voice list** and pick Auto or a named voice.
-5. Per-character voices: **Characters** tab (Talk speaker name).
-
-English-only desktop voices often misread other scripts. Use a native pack or a **Multilingual** voice.
-
-Full TTS internals (STA queue, Auto ladder, gender, SSML vs PromptBuilder, capability names): [TTS-AND-MODELS.md](TTS-AND-MODELS.md).
-
-### 8. Switch language later
+### 7. Switch language later
 
 ```powershell
 cd D:\Dev\DialogueAr\DialogueAr\Models
@@ -179,7 +153,7 @@ Chinese / Portuguese / Korean packs send an Opus **target token** (`>>cmn_Hans<<
 
 Japanese repo id is **`opus-mt-en-jap`**, not `en-ja`.
 
-Every pack’s **token / TTS culture / Windows capability / font**: [TTS-AND-MODELS.md §3](TTS-AND-MODELS.md#3-language-pack-map-model--tts-together). Worker protocol, chunking, cache keys: same file.
+Every pack’s **token / font** lives in `TargetLanguages.cs`. Worker protocol and cache keys are in `LocalTranslator.cs` / `TranslationCache.cs`.
 
 ---
 
@@ -192,7 +166,6 @@ Every pack’s **token / TTS culture / Windows capability / font**: [TTS-AND-MOD
 | `/dialogar lang` | Print current language |
 | `/dialogar lang fr` | Switch language and restart the worker |
 | `/dialogar test` | Translate a sample line (Talk/BattleTalk must be open) |
-| `/dialogar stop` | Stop / clear TTS queue |
 
 Right-click the overlay (if enabled) also opens config.
 
@@ -204,7 +177,7 @@ Right-click the overlay (if enabled) also opens config.
 
 - Enable plugin  
 - **Target language** (built-in list or Custom)  
-- Custom: TTS culture, optional Opus token, RTL checkbox  
+- Custom: optional Opus token, RTL checkbox  
 - Translate **Talk** / **BattleTalk** / **TalkSubtitle**
 
 ### Overlay
@@ -219,30 +192,6 @@ Right-click the overlay (if enabled) also opens config.
 - Reset overlay position  
 
 RTL scripts (Arabic, Persian, Hebrew) are pre-wrapped and right-aligned. LTR languages use ImGui wrap.
-
-### Speech (TTS)
-
-- Enable Windows TTS  
-- **Voice** dropdown: all installed voices, or **★ Auto (Male / Female by speaker)**  
-- **Auto gender:** detect speaker sex in-world, or prefer Female / Male  
-- Volume, speak rate (−10…+10; foreign voices use SSML prosody)  
-- Queue lines vs interrupt  
-- Stop TTS when dialogue closes  
-- Skip duplicate lines  
-- Warm up TTS on load  
-
-**Voice priority**
-
-1. **Per-character override** (Characters tab)  
-2. Global manual voice  
-3. Auto by gender (target-language voice → Multilingual → any matching gender)
-
-### Characters
-
-Assign a Windows voice to a Talk **speaker name**.
-
-- Quick-fill from the current dialogue speaker  
-- Matches full name or first name (e.g. `Alphinaud` ↔ `Alphinaud Leveilleur`)
 
 ### Translator
 
@@ -267,7 +216,7 @@ Talk / BattleTalk / TalkSubtitle
         ▼
  AddonDialogueWatcher  ── reads speaker + English body text
         │
-        ├─ cache hit (per language)? ──► overlay + TTS
+        ├─ cache hit (per language)? ──► overlay
         │
         └─ LocalTranslator ── JSON line to Python worker
                 │
@@ -275,18 +224,15 @@ Talk / BattleTalk / TalkSubtitle
         translate_worker.py + opus-mt-en-<lang>
                 │
                 ▼
-        Overlay (RTL bake only when needed)  +  DialogueTtsService (STA thread)
+        Overlay (RTL bake only when needed)
 ```
 
 - **Addon hooks:** `PostDraw` / `PostRefresh` / `PreFinalize` via `IAddonLifecycle`  
 - **Visibility:** overlay only while the matching game dialogue addon is visible  
 - **Worker:** long-lived Python process; stdin/stdout JSON (`cmd: tr`)  
 - **Cache:** `dialogue-cache.json` in the plugin config directory, keys prefixed with the language code  
-- **TTS:** never runs `System.Speech` on the game/pool thread; all synth work is queued on an STA worker thread  
 
-Native English in the game UI is left unchanged. The translation appears only in the overlay (and optionally as speech). Keep the **game client language on English**.
-
-Step-by-step of one Talk line through cache → Python → SSML: [TTS-AND-MODELS.md](TTS-AND-MODELS.md).
+Keep the **game client language on English**. Arabic (and other scripts the game font cannot draw) is drawn on the Talk balloon with a plugin font.
 
 ---
 
@@ -295,17 +241,13 @@ Step-by-step of one Talk line through cache → Python → SSML: [TTS-AND-MODELS
 ```
 DialogueAr/
 ├── Plugin.cs                 # Dalamud entry, commands, language apply
-├── Configuration.cs          # Settings + character voice lookup
+├── Configuration.cs          # Settings
 ├── TargetLanguages.cs        # Built-in language catalog
-├── CharacterVoiceOverride.cs
-├── TtsVoiceGender.cs
 ├── Services/
 │   ├── AddonDialogueWatcher.cs
 │   ├── LocalTranslator.cs
 │   ├── TranslationCache.cs
-│   ├── DialogueDisplay.cs    # RTL bake + wrap
-│   ├── DialogueTtsService.cs
-│   └── SpeakerGender.cs
+│   └── DialogueDisplay.cs    # RTL bake + wrap
 ├── Windows/
 │   ├── ConfigWindow.cs
 │   └── DialogueOverlay.cs
@@ -331,11 +273,11 @@ DialogueAr/
 ```
 
 3. If the model card says you must send `>>id<<`, put that token in **Custom → Opus token**.
-4. In config: **Custom model folder**, set the folder, TTS culture (`xx-XX`), RTL if needed.
+4. In config: **Custom model folder**, set the folder, RTL if needed.
 5. Click **Apply custom language**.
 6. Optional: add a row to `TargetLanguages.All` and to the hashtable in `setup-models.ps1` so it appears in the dropdown next build.
 
-To ship a new built-in pack, keep **Code / Repo / Folder / Font / TTS culture / token** in sync between `TargetLanguages.cs` and `setup-models.ps1`.
+To ship a new built-in pack, keep **Code / Repo / Folder / Font / token** in sync between `TargetLanguages.cs` and `setup-models.ps1`.
 
 ---
 
@@ -343,7 +285,6 @@ To ship a new built-in pack, keep **Code / Repo / Folder / Font / TTS culture / 
 
 - First line after load may wait while the model warms up; later lines (and cache hits) are much faster.  
 - Keep **Fast translation** on unless you care about marginal quality.  
-- **Online** Windows voices are slower to start; a local TTS pack is better for latency.  
 - CJK fonts are large; first overlay font build can hitch.  
 - Clear cache if old translations linger after you change model quality settings (not needed when only switching language).  
 
@@ -357,11 +298,8 @@ To ship a new built-in pack, keep **Code / Repo / Folder / Font / TTS culture / 
 | Overlay empty | Plugin enabled, Show overlay on, Talk visible, source toggles on |
 | Tofu boxes | Font missing in `Fonts\`; re-run setup for that language; reload plugin |
 | Arabic/Hebrew looks LTR | Language must be `ar` / `he` / `fa` (or Custom + RTL); wrap width |
-| TTS silent or English | Translator still warming (placeholder); English-only voice; install native TTS or Multilingual |
 | Wrong language after switch | `/dialogar lang <code>` or Apply language; confirm Translator path folder name |
 | Custom model ignored | Folder must exist and contain `config.json`; then Apply language |
-| Game crash on talk (old builds) | Upgrade; TTS must stay on STA thread |
-| Character voice ignored | Exact/first-name match; Characters tab override beats global voice |
 | `setup-models.ps1` 404 | Wrong repo id (Japanese is `opus-mt-en-jap`); pass `-Repo` from the model card |
 | Thai / some small pairs fail download | That `opus-mt-en-th` repo may not exist; find another Helsinki repo and use `-Repo` |
 
@@ -370,7 +308,7 @@ To ship a new built-in pack, keep **Code / Repo / Folder / Font / TTS culture / 
 ## Build notes
 
 - SDK: `Dalamud.NET.Sdk/15.0.0`  
-- NuGet: `ArabicRt` (Arabic-script overlay only), `System.Speech`  
+- NuGet: `ArabicRt` (Arabic-script overlay only)  
 - Unsafe blocks enabled (addon node reads)  
 
 ```powershell

@@ -110,5 +110,3 @@ if ($pack.FontFile -and $pack.FontUrl) {
 
 Write-Host ""
 Write-Host "Done. In-game: /dialogar lang $Language   or pick the language in config, then reload if the worker was already running."
-Write-Host "Optional TTS (Admin PowerShell), example French:"
-Write-Host "  Add-WindowsCapability -Online -Name Language.TextToSpeech~~~fr-FR~0.0.1.0"
