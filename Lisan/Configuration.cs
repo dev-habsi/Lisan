@@ -46,6 +46,11 @@ public class Configuration : IPluginConfiguration
     public bool WarmupTranslatorOnLoad { get; set; } = true;
     public bool LogTranslations { get; set; } = false;
 
+    /// <summary>Speak Arabic translations with a Windows TTS voice. Off by default.</summary>
+    public bool EnableTts { get; set; } = false;
+    public int TtsVolume { get; set; } = 80;
+    public int TtsRate { get; set; } = 0;
+
     public void Save() => Plugin.PluginInterface.SavePluginConfig(this);
 
     public void Migrate()

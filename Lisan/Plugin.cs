@@ -28,6 +28,7 @@ public sealed class Plugin : IDalamudPlugin
 
     public TranslationCache Cache { get; }
     public LocalTranslator Translator { get; }
+    public static SpeechService Tts { get; private set; } = null!;
     public AddonDialogueWatcher Watcher { get; }
 
     public readonly WindowSystem WindowSystem = new(Brand.Name);
@@ -46,6 +47,7 @@ public sealed class Plugin : IDalamudPlugin
 
         Cache = new TranslationCache(cacheDir);
         Translator = new LocalTranslator(Cache, pluginDir, Configuration.ModelDirectory);
+        Tts = new SpeechService();
         Watcher = new AddonDialogueWatcher(Translator);
         Watcher.Register();
         Framework.Update += Watcher.OnFrameworkUpdate;
@@ -101,6 +103,7 @@ public sealed class Plugin : IDalamudPlugin
         WindowSystem.RemoveAllWindows();
         Overlay.Dispose();
         Watcher.Dispose();
+        Tts.Dispose();
         Translator.Dispose();
         Cache.Dispose();
         CommandManager.RemoveHandler(CommandName);
@@ -155,6 +158,8 @@ public sealed class Plugin : IDalamudPlugin
             default:
                 Configuration.Enabled = !Configuration.Enabled;
                 Configuration.Save();
+                if (!Configuration.Enabled)
+                    Tts.Stop();
                 break;
         }
     }
@@ -201,6 +206,7 @@ public sealed class Plugin : IDalamudPlugin
             _ = Framework.RunOnFrameworkThread(() =>
             {
                 Watcher.SetTestLineForSource(source, sample, translated);
+                Tts.SpeakDialogue(translated);
             });
         });
     }

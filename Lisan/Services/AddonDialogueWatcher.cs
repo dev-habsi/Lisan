@@ -511,6 +511,8 @@ public sealed class AddonDialogueWatcher : IDisposable
 
             ApplyNativeBody(capturedAddon, capturedNode, display);
 
+            Plugin.Tts.SpeakDialogue(translated);
+
             if (Plugin.Configuration.LogTranslations)
                 Plugin.Log.Information($"[{capturedSource}] {captured} => {translated}");
         }
@@ -572,6 +574,7 @@ public sealed class AddonDialogueWatcher : IDisposable
                 lastSeenEnglish = string.Empty;
                 lastSeenSource = string.Empty;
                 unseenFrames = 0;
+                Plugin.Tts.Stop();
             }
         }
     }
@@ -587,6 +590,7 @@ public sealed class AddonDialogueWatcher : IDisposable
         lastSeenEnglish = string.Empty;
         lastSeenSource = string.Empty;
         unseenFrames = 0;
+        Plugin.Tts.Stop();
         ClearChoices();
     }
 

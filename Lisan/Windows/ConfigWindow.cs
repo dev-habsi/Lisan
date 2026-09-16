@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using Lisan.Services;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Windowing;
 using Dalamud.Utility;
@@ -162,6 +163,58 @@ public sealed class ConfigWindow : Window
 
         Toggle("Fast translation (greedy, recommended)", () => cfg.FastTranslation, v => cfg.FastTranslation = v);
         Toggle("Warm up translator on load", () => cfg.WarmupTranslatorOnLoad, v => cfg.WarmupTranslatorOnLoad = v);
+
+        ImGui.Spacing();
+        ImGui.Text("Speech (optional)");
+        Toggle("Speak Arabic with Windows TTS", () => cfg.EnableTts, v =>
+        {
+            cfg.EnableTts = v;
+            if (!v)
+                Plugin.Tts.Stop();
+            Plugin.Tts.RecheckVoice();
+        });
+        ImGui.TextWrapped(Plugin.Tts.Status);
+
+        if (cfg.EnableTts && Plugin.Tts.MissingArabicVoice)
+        {
+            ImGui.Spacing();
+            ImGui.TextWrapped("Windows has no Arabic Desktop TTS voice that Lisan can use. Install one:");
+            ImGui.BulletText("Settings → Time & language → Language & region");
+            ImGui.BulletText("Add Arabic (e.g. العربية — Saudi Arabia) if it is not there");
+            ImGui.BulletText("Click Arabic → Language options → Speech → Download");
+            ImGui.BulletText("Also: Time & language → Speech → Add voices → Arabic");
+            ImGui.BulletText("Pick a Desktop voice (Microsoft Huma / Naayf), not only Natural");
+            ImGui.BulletText("Close this window, then Recheck voice (or reload the plugin)");
+            ImGui.Spacing();
+            if (ImGui.Button("Open language settings"))
+                SpeechService.OpenWindowsLanguageSettings();
+            ImGui.SameLine();
+            if (ImGui.Button("Open speech settings"))
+                SpeechService.OpenWindowsSpeechSettings();
+            ImGui.SameLine();
+            if (ImGui.Button("Recheck voice"))
+                Plugin.Tts.RecheckVoice();
+        }
+        else
+        {
+            ImGui.TextDisabled("Uses a Windows Arabic Desktop voice (Huma / Naayf). Natural voices often do not show.");
+        }
+        var vol = cfg.TtsVolume;
+        if (ImGui.SliderInt("TTS volume", ref vol, 0, 100))
+        {
+            cfg.TtsVolume = vol;
+            cfg.Save();
+        }
+
+        var rate = cfg.TtsRate;
+        if (ImGui.SliderInt("TTS rate", ref rate, -10, 10))
+        {
+            cfg.TtsRate = rate;
+            cfg.Save();
+        }
+
+        if (ImGui.Button("Test TTS"))
+            Plugin.Tts.Test();
 
         ImGui.Spacing();
         ImGui.Text("Custom model folder (optional)");

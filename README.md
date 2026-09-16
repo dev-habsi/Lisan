@@ -210,7 +210,8 @@ Every pack’s **token / font** lives in `TargetLanguages.cs`. Worker protocol a
 - **Target language** (built-in list or Custom)  
 - Custom: optional Opus token, RTL checkbox  
 - Translate **Talk** / **BattleTalk** / **TalkSubtitle** / **dialogue choices**  
-- Balloon **font size** and **text color** (plugin-font languages: Arabic, CJK, …)
+- Balloon **font size** and **text color** (plugin-font languages: Arabic, CJK, …)  
+- Optional **Windows TTS** for Arabic (off by default; needs an Arabic speech voice installed)
 
 Translation always writes onto the game balloon. Arabic / CJK use the plugin font on the same balloon.
 
@@ -220,6 +221,7 @@ Translation always writes onto the game balloon. Arabic / CJK use the plugin fon
 - **Fast translation** (greedy decode, recommended) vs slightly better/slower beams  
 - Warm up translator on load  
 - Optional custom model folder (Apply restarts the worker)  
+- Optional **Speak Arabic with Windows TTS** (volume / rate / test)  
 - Clear cache / test translate / apply language  
 
 ### Debug
