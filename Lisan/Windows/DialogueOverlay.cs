@@ -5,6 +5,7 @@ using System.Numerics;
 using Lisan.Services;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.ManagedFontAtlas;
+using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
 
 namespace Lisan.Windows;
@@ -18,6 +19,7 @@ public sealed class DialogueOverlay : Window, IDisposable
     private readonly Plugin plugin;
     private IFontHandle? overlayFont;
     private bool dockedToTalk;
+    private bool drawingChoices;
     private float builtFontPx = 26f;
 
     public DialogueOverlay(Plugin plugin)
@@ -59,11 +61,14 @@ public sealed class DialogueOverlay : Window, IDisposable
             return false;
         if (!Plugin.ClientState.IsLoggedIn)
             return false;
+        if (!AddonDialogueWatcher.NeedsGameFontOverlay())
+            return false;
+
+        if (plugin.Watcher.Choices.Count > 0)
+            return true;
 
         var line = plugin.Watcher.Current;
         if (line is null)
-            return false;
-        if (!AddonDialogueWatcher.NeedsGameFontOverlay())
             return false;
 
         return AddonDialogueWatcher.IsAddonVisible(line.Source);
@@ -72,30 +77,53 @@ public sealed class DialogueOverlay : Window, IDisposable
     public override void PreDraw()
     {
         dockedToTalk = false;
-        var line = plugin.Watcher.Current;
-        if (line is not null
-            && AddonDialogueWatcher.TryGetBodyTextRect(line.Source, out var talkPos, out var talkSize, line.BodyNodeId))
+        drawingChoices = false;
+        var choices = plugin.Watcher.Choices;
+        if (choices.Count > 0)
         {
-            dockedToTalk = true;
+            drawingChoices = true;
             ForceMainWindow = true;
-            Position = talkPos;
+            Position = Vector2.Zero;
             PositionCondition = ImGuiCond.Always;
-            Size = new Vector2(talkSize.X, 0);
+            var vp = ImGuiHelpers.MainViewport.WorkSize;
+            var gs = ImGuiHelpers.GlobalScale;
+            if (gs < 0.01f)
+                gs = 1f;
+            Size = vp / gs;
             SizeCondition = ImGuiCond.Always;
-            var font = Math.Clamp(Plugin.Configuration.BalloonFontSize, 16f, 42f);
             SizeConstraints = new WindowSizeConstraints
             {
-                MinimumSize = new Vector2(talkSize.X, Math.Max(72f, font * 2.6f)),
-                MaximumSize = new Vector2(talkSize.X, Math.Max(220f, font * 10f)),
+                MinimumSize = vp / gs,
+                MaximumSize = vp / gs,
             };
         }
         else
         {
-            ForceMainWindow = false;
-            Position = new Vector2(-10000f, -10000f);
-            PositionCondition = ImGuiCond.Always;
-            Size = null;
-            SizeConstraints = null;
+            var line = plugin.Watcher.Current;
+            if (line is not null
+                && AddonDialogueWatcher.TryGetBodyTextRect(line.Source, out var talkPos, out var talkSize, line.BodyNodeId))
+            {
+                dockedToTalk = true;
+                ForceMainWindow = true;
+                Position = talkPos;
+                PositionCondition = ImGuiCond.Always;
+                Size = new Vector2(talkSize.X, 0);
+                SizeCondition = ImGuiCond.Always;
+                var font = Math.Clamp(Plugin.Configuration.BalloonFontSize, 16f, 42f);
+                SizeConstraints = new WindowSizeConstraints
+                {
+                    MinimumSize = new Vector2(talkSize.X, Math.Max(72f, font * 2.6f)),
+                    MaximumSize = new Vector2(talkSize.X, Math.Max(220f, font * 10f)),
+                };
+            }
+            else
+            {
+                ForceMainWindow = false;
+                Position = new Vector2(-10000f, -10000f);
+                PositionCondition = ImGuiCond.Always;
+                Size = null;
+                SizeConstraints = null;
+            }
         }
 
         ImGui.PushStyleColor(ImGuiCol.WindowBg, new Vector4(0, 0, 0, 0));
@@ -113,6 +141,12 @@ public sealed class DialogueOverlay : Window, IDisposable
 
     public override void Draw()
     {
+        if (drawingChoices)
+        {
+            DrawChoices();
+            return;
+        }
+
         if (!dockedToTalk)
             return;
 
@@ -187,6 +221,68 @@ public sealed class DialogueOverlay : Window, IDisposable
         else
         {
             DrawTranslation();
+        }
+
+        ImGui.SetWindowFontScale(1f);
+    }
+
+    private void DrawChoices()
+    {
+        var lang = TargetLanguages.Current();
+        var cfg = Plugin.Configuration;
+        var fontPx = Math.Clamp(cfg.BalloonFontSize, 16f, 42f);
+        var scale = fontPx / Math.Max(8f, builtFontPx);
+        ImGui.SetWindowFontScale(scale);
+
+        void DrawOne(DialogueChoice choice)
+        {
+            if (string.IsNullOrWhiteSpace(choice.Translation))
+                return;
+
+            var wrapW = Math.Max(48f, choice.Size.X);
+            var textCol = cfg.BalloonTextColor;
+            if (choice.Busy)
+                textCol = new Vector4(textCol.X * 0.72f, textCol.Y * 0.72f, textCol.Z * 0.72f, textCol.W * 0.88f);
+
+            ImGui.SetCursorScreenPos(choice.Pos);
+
+            if (!lang.RightToLeft)
+            {
+                ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + wrapW);
+                ImGui.TextColored(textCol, choice.Translation);
+                ImGui.PopTextWrapPos();
+                return;
+            }
+
+            var maxChars = DialogueDisplay.EstimateMaxChars(wrapW, fontPx);
+            var lines = DialogueDisplay.LinesForImGui(choice.Translation, maxChars, true, lang.ArabicScript);
+            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0, 3));
+            var originX = ImGui.GetCursorPosX();
+            foreach (var row in lines)
+            {
+                var size = ImGui.CalcTextSize(row);
+                if (size.X <= 2f)
+                    continue;
+                var pad = Math.Max(0f, wrapW - size.X);
+                ImGui.SetCursorPosX(originX + pad);
+                ImGui.TextColored(textCol, row);
+            }
+
+            ImGui.PopStyleVar();
+        }
+
+        if (overlayFont is not null)
+        {
+            using (overlayFont.Push())
+            {
+                foreach (var choice in plugin.Watcher.Choices)
+                    DrawOne(choice);
+            }
+        }
+        else
+        {
+            foreach (var choice in plugin.Watcher.Choices)
+                DrawOne(choice);
         }
 
         ImGui.SetWindowFontScale(1f);

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -24,6 +25,16 @@ public sealed class DialogueLine
     public bool Busy { get; init; }
 }
 
+public sealed class DialogueChoice
+{
+    public uint NodeId { get; init; }
+    public string English { get; init; } = string.Empty;
+    public string Translation { get; init; } = string.Empty;
+    public bool Busy { get; init; }
+    public Vector2 Pos { get; init; }
+    public Vector2 Size { get; init; }
+}
+
 public sealed class AddonDialogueWatcher : IDisposable
 {
     private readonly LocalTranslator translator;
@@ -39,6 +50,11 @@ public sealed class AddonDialogueWatcher : IDisposable
     private string lastSeenSource = string.Empty;
     private long lastSeenTick;
     private int unseenFrames;
+    private readonly List<DialogueChoice> choices = [];
+    private readonly Dictionary<string, string> choiceOriginal = new();
+    private readonly Dictionary<string, string> choiceTranslated = new();
+    private readonly HashSet<string> choiceInflight = [];
+    private string choiceAddon = string.Empty;
 
     public AddonDialogueWatcher(LocalTranslator translator)
     {
@@ -51,6 +67,15 @@ public sealed class AddonDialogueWatcher : IDisposable
         {
             lock (gate)
                 return current;
+        }
+    }
+
+    public IReadOnlyList<DialogueChoice> Choices
+    {
+        get
+        {
+            lock (gate)
+                return choices.ToArray();
         }
     }
 
@@ -67,6 +92,18 @@ public sealed class AddonDialogueWatcher : IDisposable
         Plugin.AddonLifecycle.RegisterListener(AddonEvent.PostDraw, "TalkSubtitle", OnTalkSubtitle);
         Plugin.AddonLifecycle.RegisterListener(AddonEvent.PostRefresh, "TalkSubtitle", OnTalkSubtitle);
         Plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "TalkSubtitle", OnTalkSubtitleClosed);
+
+        Plugin.AddonLifecycle.RegisterListener(AddonEvent.PostDraw, "SelectString", OnSelectString);
+        Plugin.AddonLifecycle.RegisterListener(AddonEvent.PostRefresh, "SelectString", OnSelectString);
+        Plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "SelectString", OnSelectStringClosed);
+
+        Plugin.AddonLifecycle.RegisterListener(AddonEvent.PostDraw, "SelectIconString", OnSelectIconString);
+        Plugin.AddonLifecycle.RegisterListener(AddonEvent.PostRefresh, "SelectIconString", OnSelectIconString);
+        Plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "SelectIconString", OnSelectIconStringClosed);
+
+        Plugin.AddonLifecycle.RegisterListener(AddonEvent.PostDraw, "CutSceneSelectString", OnCutSceneSelectString);
+        Plugin.AddonLifecycle.RegisterListener(AddonEvent.PostRefresh, "CutSceneSelectString", OnCutSceneSelectString);
+        Plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "CutSceneSelectString", OnCutSceneSelectStringClosed);
     }
 
     public void Dispose()
@@ -77,6 +114,12 @@ public sealed class AddonDialogueWatcher : IDisposable
         Plugin.AddonLifecycle.UnregisterListener(OnBattleTalkClosed);
         Plugin.AddonLifecycle.UnregisterListener(OnTalkSubtitle);
         Plugin.AddonLifecycle.UnregisterListener(OnTalkSubtitleClosed);
+        Plugin.AddonLifecycle.UnregisterListener(OnSelectString);
+        Plugin.AddonLifecycle.UnregisterListener(OnSelectStringClosed);
+        Plugin.AddonLifecycle.UnregisterListener(OnSelectIconString);
+        Plugin.AddonLifecycle.UnregisterListener(OnSelectIconStringClosed);
+        Plugin.AddonLifecycle.UnregisterListener(OnCutSceneSelectString);
+        Plugin.AddonLifecycle.UnregisterListener(OnCutSceneSelectStringClosed);
         foreach (var pin in textPins.Values)
         {
             if (pin.IsAllocated)
@@ -88,6 +131,9 @@ public sealed class AddonDialogueWatcher : IDisposable
 
     public void OnFrameworkUpdate(IFramework framework)
     {
+        if (choices.Count > 0 && (string.IsNullOrEmpty(choiceAddon) || !IsNamedAddonVisible(choiceAddon)))
+            ClearChoices();
+
         var line = Current;
         if (line is null)
             return;
@@ -112,6 +158,9 @@ public sealed class AddonDialogueWatcher : IDisposable
         {
             "BattleTalk" => "_BattleTalk",
             "TalkSubtitle" => "TalkSubtitle",
+            "SelectString" => "SelectString",
+            "SelectIconString" => "SelectIconString",
+            "CutSceneSelectString" => "CutSceneSelectString",
             "Talk" => "Talk",
             _ => null,
         };
@@ -135,6 +184,13 @@ public sealed class AddonDialogueWatcher : IDisposable
     private void OnTalkClosed(AddonEvent type, AddonArgs args) => ClearIfSource("Talk");
     private void OnBattleTalkClosed(AddonEvent type, AddonArgs args) => ClearIfSource("BattleTalk");
     private void OnTalkSubtitleClosed(AddonEvent type, AddonArgs args) => ClearIfSource("TalkSubtitle");
+    private void OnSelectStringClosed(AddonEvent type, AddonArgs args) => ClearChoices();
+    private void OnSelectIconStringClosed(AddonEvent type, AddonArgs args) => ClearChoices();
+    private void OnCutSceneSelectStringClosed(AddonEvent type, AddonArgs args) => ClearChoices();
+
+    private void OnSelectString(AddonEvent type, AddonArgs args) => TranslateChoiceAddon("SelectString");
+    private void OnSelectIconString(AddonEvent type, AddonArgs args) => TranslateChoiceAddon("SelectIconString");
+    private void OnCutSceneSelectString(AddonEvent type, AddonArgs args) => TranslateChoiceAddon("CutSceneSelectString");
 
     private void OnTalk(AddonEvent type, AddonArgs args)
     {
@@ -158,6 +214,191 @@ public sealed class AddonDialogueWatcher : IDisposable
             return;
 
         ReadNodesAndTranslate("TalkSubtitle", "TalkSubtitle", speakerNodeId: 0, bodyNodeId: 2);
+    }
+
+    private void TranslateChoiceAddon(string addonName)
+    {
+        if (!Plugin.Configuration.Enabled || !Plugin.Configuration.TranslateChoices)
+            return;
+
+        var scanned = ScanChoiceNodes(addonName);
+        if (scanned.Count == 0)
+        {
+            if (choiceAddon == addonName)
+                ClearChoices();
+            return;
+        }
+
+        choiceAddon = addonName;
+        var overlay = NeedsGameFontOverlay();
+        var busy = TargetLanguages.Current().BusyText;
+        var next = new List<DialogueChoice>(scanned.Count);
+        var live = new HashSet<string>();
+
+        foreach (var row in scanned)
+        {
+            var key = addonName + ":" + row.NodeId;
+            live.Add(key);
+
+            var english = row.English;
+            if (choiceOriginal.TryGetValue(key, out var orig))
+            {
+                if (choiceTranslated.TryGetValue(key, out var prev)
+                    && (english == prev || SameLoose(english, prev) || ContainsArabic(english)))
+                    english = orig;
+                else if (ContainsArabic(english))
+                    english = orig;
+                else if (english != orig && !SameLoose(english, orig))
+                    choiceOriginal[key] = english;
+            }
+            else if (ContainsArabic(english))
+            {
+                continue;
+            }
+            else
+            {
+                choiceOriginal[key] = english;
+            }
+
+            string translation;
+            var isBusy = false;
+            if (translator.TryGetCached(english, out var cached))
+            {
+                translation = cached;
+                choiceTranslated[key] = cached;
+            }
+            else if (choiceTranslated.TryGetValue(key, out var done))
+            {
+                translation = done;
+            }
+            else
+            {
+                translation = busy;
+                isBusy = true;
+                if (choiceInflight.Add(key))
+                    StartChoiceTranslation(addonName, row.NodeId, english);
+            }
+
+            if (overlay)
+                HideBodyText(addonName, row.NodeId);
+            else if (!isBusy)
+                WriteBodyText(addonName, row.NodeId, FormatForAddon(translation), styleBalloon: false);
+
+            next.Add(new DialogueChoice
+            {
+                NodeId = row.NodeId,
+                English = english,
+                Translation = translation,
+                Busy = isBusy,
+                Pos = row.Pos,
+                Size = row.Size,
+            });
+        }
+
+        foreach (var stale in choiceOriginal.Keys.Where(k => k.StartsWith(addonName + ":", StringComparison.Ordinal) && !live.Contains(k)).ToArray())
+        {
+            choiceOriginal.Remove(stale);
+            choiceTranslated.Remove(stale);
+            choiceInflight.Remove(stale);
+        }
+
+        lock (gate)
+        {
+            choices.Clear();
+            choices.AddRange(next);
+        }
+    }
+
+    private void StartChoiceTranslation(string addonName, uint nodeId, string english)
+    {
+        var key = addonName + ":" + nodeId;
+        var capturedAddon = addonName;
+        var capturedNode = nodeId;
+        var captured = english;
+        Task.Run(() =>
+        {
+            var translated = translator.Translate(captured);
+            _ = Plugin.Framework.RunOnFrameworkThread(() =>
+            {
+                choiceInflight.Remove(key);
+                if (string.IsNullOrWhiteSpace(translated))
+                    translated = captured;
+                choiceTranslated[key] = translated;
+                if (Plugin.Configuration.LogTranslations)
+                    Plugin.Log.Information($"[{capturedAddon} #{capturedNode}] {captured} => {translated}");
+            });
+        });
+    }
+
+    private void ClearChoices()
+    {
+        lock (gate)
+            choices.Clear();
+        choiceOriginal.Clear();
+        choiceTranslated.Clear();
+        choiceInflight.Clear();
+        choiceAddon = string.Empty;
+    }
+
+    private sealed class ScannedChoice
+    {
+        public uint NodeId;
+        public string English = string.Empty;
+        public Vector2 Pos;
+        public Vector2 Size;
+    }
+
+    private unsafe List<ScannedChoice> ScanChoiceNodes(string addonName)
+    {
+        var found = new List<ScannedChoice>();
+        var addonPtr = Plugin.GameGui.GetAddonByName(addonName);
+        if (addonPtr.Address == nint.Zero)
+            return found;
+
+        var addon = (AtkUnitBase*)addonPtr.Address;
+        if (addon is null || !addon->IsVisible)
+            return found;
+
+        var count = addon->UldManager.NodeListCount;
+        var list = addon->UldManager.NodeList;
+        if (list is null)
+            return found;
+
+        var gs = ImGuiHelpers.GlobalScale;
+        if (gs < 0.01f)
+            gs = 1f;
+
+        for (var i = 0; i < count; i++)
+        {
+            var node = list[i];
+            if (node is null || node->Type != NodeType.Text)
+                continue;
+            if (!node->IsVisible())
+                continue;
+
+            var tn = (AtkTextNode*)node;
+            var text = ReadTextNode(tn);
+            if (string.IsNullOrWhiteSpace(text) || text.Length < 2)
+                continue;
+            if (TargetLanguages.IsBusyPlaceholder(text))
+                continue;
+
+            var scale = GetNodeScale((AtkResNode*)tn);
+            found.Add(new ScannedChoice
+            {
+                NodeId = tn->NodeId,
+                English = text.Trim(),
+                Pos = new Vector2(tn->ScreenX, tn->ScreenY) / gs,
+                Size = new Vector2(
+                    Math.Max(48f, tn->Width * scale.X),
+                    Math.Max(20f, tn->Height * scale.Y)) / gs,
+            });
+        }
+
+        if (found.Count > 12)
+            found.RemoveRange(12, found.Count - 12);
+
+        return found;
     }
 
     private unsafe void ReadNodesAndTranslate(string source, string addonName, uint speakerNodeId, uint bodyNodeId)
@@ -346,6 +587,7 @@ public sealed class AddonDialogueWatcher : IDisposable
         lastSeenEnglish = string.Empty;
         lastSeenSource = string.Empty;
         unseenFrames = 0;
+        ClearChoices();
     }
 
     private static unsafe string ReadNodeText(AtkUnitBase* addon, uint nodeId)
@@ -605,7 +847,7 @@ public sealed class AddonDialogueWatcher : IDisposable
         node->Color.A = alpha;
     }
 
-    private unsafe void WriteBodyText(string addonName, uint bodyNodeId, string text)
+    private unsafe void WriteBodyText(string addonName, uint bodyNodeId, string text, bool styleBalloon = true)
     {
         if (string.IsNullOrEmpty(text))
             return;
@@ -623,19 +865,23 @@ public sealed class AddonDialogueWatcher : IDisposable
             return;
 
         var bytes = Encoding.UTF8.GetBytes(text + "\0");
-        if (textPins.TryGetValue(addonName, out var old) && old.IsAllocated)
+        var pinKey = addonName + "#" + bodyNodeId;
+        if (textPins.TryGetValue(pinKey, out var old) && old.IsAllocated)
             old.Free();
         var pin = GCHandle.Alloc(bytes, GCHandleType.Pinned);
-        textPins[addonName] = pin;
+        textPins[pinKey] = pin;
         node->SetText((byte*)pin.AddrOfPinnedObject());
 
-        var cfg = Plugin.Configuration;
-        var col = cfg.BalloonTextColor;
-        node->TextColor.R = (byte)Math.Clamp((int)(col.X * 255f), 0, 255);
-        node->TextColor.G = (byte)Math.Clamp((int)(col.Y * 255f), 0, 255);
-        node->TextColor.B = (byte)Math.Clamp((int)(col.Z * 255f), 0, 255);
-        node->TextColor.A = (byte)Math.Clamp((int)(col.W * 255f), 0, 255);
-        node->FontSize = (byte)Math.Clamp(cfg.BalloonFontSize * 0.55f, 12f, 28f);
+        if (styleBalloon)
+        {
+            var cfg = Plugin.Configuration;
+            var col = cfg.BalloonTextColor;
+            node->TextColor.R = (byte)Math.Clamp((int)(col.X * 255f), 0, 255);
+            node->TextColor.G = (byte)Math.Clamp((int)(col.Y * 255f), 0, 255);
+            node->TextColor.B = (byte)Math.Clamp((int)(col.Z * 255f), 0, 255);
+            node->TextColor.A = (byte)Math.Clamp((int)(col.W * 255f), 0, 255);
+            node->FontSize = (byte)Math.Clamp(cfg.BalloonFontSize * 0.55f, 12f, 28f);
+        }
 
         var lang = TargetLanguages.Current();
         if (lang.RightToLeft)

@@ -121,6 +121,7 @@ public sealed class ConfigWindow : Window
         Toggle("Talk (NPC dialogue)", () => cfg.TranslateTalk, v => cfg.TranslateTalk = v);
         Toggle("BattleTalk", () => cfg.TranslateBattleTalk, v => cfg.TranslateBattleTalk = v);
         Toggle("TalkSubtitle (cutscenes)", () => cfg.TranslateTalkSubtitle, v => cfg.TranslateTalkSubtitle = v);
+        Toggle("Dialogue choices", () => cfg.TranslateChoices, v => cfg.TranslateChoices = v);
         ImGui.TextDisabled("Translation is written onto the game balloon. Scripts the game font cannot draw (Arabic, CJK, …) use a plugin font on the same balloon.");
 
         ImGui.Spacing();

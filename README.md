@@ -209,7 +209,7 @@ Every pack’s **token / font** lives in `TargetLanguages.cs`. Worker protocol a
 - Enable plugin  
 - **Target language** (built-in list or Custom)  
 - Custom: optional Opus token, RTL checkbox  
-- Translate **Talk** / **BattleTalk** / **TalkSubtitle**  
+- Translate **Talk** / **BattleTalk** / **TalkSubtitle** / **dialogue choices**  
 - Balloon **font size** and **text color** (plugin-font languages: Arabic, CJK, …)
 
 Translation always writes onto the game balloon. Arabic / CJK use the plugin font on the same balloon.

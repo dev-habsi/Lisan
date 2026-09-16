@@ -177,9 +177,12 @@ public sealed class Plugin : IDalamudPlugin
     {
         if (!AddonDialogueWatcher.IsNamedAddonVisible("Talk")
             && !AddonDialogueWatcher.IsNamedAddonVisible("_BattleTalk")
-            && !AddonDialogueWatcher.IsNamedAddonVisible("TalkSubtitle"))
+            && !AddonDialogueWatcher.IsNamedAddonVisible("TalkSubtitle")
+            && !AddonDialogueWatcher.IsNamedAddonVisible("SelectString")
+            && !AddonDialogueWatcher.IsNamedAddonVisible("SelectIconString")
+            && !AddonDialogueWatcher.IsNamedAddonVisible("CutSceneSelectString"))
         {
-            Log.Information($"{Brand.Name} test: open Talk/BattleTalk first, then {Brand.Command} test");
+            Log.Information($"{Brand.Name} test: open Talk/BattleTalk/choices first, then {Brand.Command} test");
             return;
         }
 

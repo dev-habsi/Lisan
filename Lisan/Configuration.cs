@@ -19,6 +19,7 @@ public class Configuration : IPluginConfiguration
     public bool TranslateTalk { get; set; } = true;
     public bool TranslateBattleTalk { get; set; } = true;
     public bool TranslateTalkSubtitle { get; set; } = true;
+    public bool TranslateChoices { get; set; } = true;
 
     /// <summary>Plugin-font balloon size in pixels (Arabic, CJK, …).</summary>
     public float BalloonFontSize { get; set; } = 26f;
