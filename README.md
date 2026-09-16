@@ -4,11 +4,11 @@
 
 Made with love at **[habsi.net](https://habsi.net)**.
 
-Hooks **Talk**, **BattleTalk**, and **TalkSubtitle**, translates locally with **Helsinki-NLP Opus-MT** (nothing leaves your PC), and writes the line onto the balloon.
+Hooks **Talk**, **BattleTalk**, **TalkSubtitle**, **dialogue choices**, and **Yes/No** prompts, translates locally with **Helsinki-NLP Opus-MT** (nothing leaves your PC), and writes the line onto the balloon. Keeps a searchable history, can copy or speak the last line, optional Arabic TTS.
 
 Default language is **Arabic**. Pick Japanese, Chinese, or any built-in pack in **General → Target language**.
 
-**Current version:** 0.4.0  
+**Current version:** 0.5.0  
 **Dalamud:** API 15 (`.NET 10`)  
 **Author:** [ALHABSI](https://habsi.net)
 
@@ -195,10 +195,19 @@ Every pack’s **token / font** lives in `TargetLanguages.cs`. Worker protocol a
 |---------|--------|
 | `/lisan` | Toggle plugin on/off |
 | `/lisan config` | Open settings |
+| `/lisan history` | Open dialogue history (copy / speak / export) |
+| `/lisan copy` | Copy the last translation |
+| `/lisan speak` | Replay last Arabic TTS line |
+| `/lisan stop` | Stop TTS |
+| `/lisan export` | Write history to `lisan-history.txt` in the plugin config folder |
+| `/lisan status` | Print language, TTS, and history count |
+| `/lisan help` | List commands |
 | `/lisan lang` | Print current language |
 | `/lisan lang ar` | Switch language and restart the worker |
 | `/lisan test` | Translate a sample line (Talk/BattleTalk must be open) |
 | `/dialogar` | Same commands (old name, still works) |
+
+Hotkeys (optional, on by default): **Ctrl+Alt+C** copy, **Ctrl+Alt+H** history, **Ctrl+Alt+S** speak, **Ctrl+Alt+X** stop TTS.
 
 ---
 
@@ -209,9 +218,9 @@ Every pack’s **token / font** lives in `TargetLanguages.cs`. Worker protocol a
 - Enable plugin  
 - **Target language** (built-in list or Custom)  
 - Custom: optional Opus token, RTL checkbox  
-- Translate **Talk** / **BattleTalk** / **TalkSubtitle** / **dialogue choices**  
+- Translate **Talk** / **BattleTalk** / **TalkSubtitle** / **dialogue choices** / **Yes/No**  
 - Balloon **font size** and **text color** (plugin-font languages: Arabic, CJK, …)  
-- Optional **Windows TTS** for Arabic (off by default; needs an Arabic speech voice installed)
+- **History**: save last 250 lines, auto-copy, Ctrl+Alt hotkeys, open history window  
 
 Translation always writes onto the game balloon. Arabic / CJK use the plugin font on the same balloon.
 
@@ -221,8 +230,12 @@ Translation always writes onto the game balloon. Arabic / CJK use the plugin fon
 - **Fast translation** (greedy decode, recommended) vs slightly better/slower beams  
 - Warm up translator on load  
 - Optional custom model folder (Apply restarts the worker)  
-- Optional **Speak Arabic with Windows TTS** (volume / rate / test)  
+- Optional **Speak Arabic with Windows TTS** (volume / rate / test / replay; only when game focused; optional speak choices)  
 - Clear cache / test translate / apply language  
+
+### History window
+
+`/lisan history` — filter, copy EN or translation, speak a line, export `.txt`, clear.
 
 ### Debug
 
@@ -234,7 +247,7 @@ Translation always writes onto the game balloon. Arabic / CJK use the plugin fon
 ## How it works
 
 ```
-Talk / BattleTalk / TalkSubtitle
+Talk / BattleTalk / TalkSubtitle / choices / YesNo
         │
         ▼
  AddonDialogueWatcher  ── reads speaker + English body text
@@ -269,11 +282,14 @@ Lisan/
 ├── TargetLanguages.cs        # Built-in language catalog
 ├── Services/
 │   ├── AddonDialogueWatcher.cs
+│   ├── DialogueHistory.cs    # last 250 lines, persist + export
+│   ├── SpeechService.cs      # optional Arabic Windows TTS
 │   ├── LocalTranslator.cs
 │   ├── TranslationCache.cs
 │   └── DialogueDisplay.cs    # RTL bake + wrap
 ├── Windows/
 │   ├── ConfigWindow.cs
+│   ├── HistoryWindow.cs
 │   └── DialogueOverlay.cs
 ├── Models/
 │   ├── translate_worker.py
@@ -328,6 +344,8 @@ To ship a new built-in pack, keep **Code / Repo / Folder / Font / token** in syn
 | Custom model ignored | Folder must exist and contain `config.json`; then Apply language |
 | `setup-models.ps1` 404 | Wrong repo id (Japanese is `opus-mt-en-jap`); pass `-Repo` from the model card |
 | Thai / some small pairs fail download | That `opus-mt-en-th` repo may not exist; find another Helsinki repo and use `-Repo` |
+| TTS says no Arabic voice | Install a Desktop Arabic voice (Huma / Naayf) in Windows Speech settings, then Recheck voice |
+| TTS silent | Plugin TTS on; game focused (unless you hit Replay); language `ar`; Arabic text on the balloon |
 
 ---
 

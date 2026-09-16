@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
   <PropertyGroup>
-    <Version>0.4.0.0</Version>
+    <Version>0.5.0.0</Version>
     <AssemblyName>Lisan</AssemblyName>
     <RootNamespace>Lisan</RootNamespace>
     <InternalName>Lisan</InternalName>
     <Author>ALHABSI</Author>
     <Name>Lisan</Name>
     <Punchline>Hear Eorzea in your own tongue. Offline dialogue translation, made with love at habsi.net.</Punchline>
-    <Description>Lisan (لسان — tongue, language) listens to Talk, BattleTalk, and cutscene subtitles, then translates English locally with Helsinki-NLP Opus-MT on your PC. No cloud translation. Arabic, French, Japanese, and many more. A small gift from habsi.net.</Description>
+    <Description>Lisan (لسان — tongue, language) listens to Talk, BattleTalk, cutscene subtitles, and dialogue choices, then translates English locally with Helsinki-NLP Opus-MT on your PC. History, copy, optional Arabic TTS. No cloud translation. A small gift from habsi.net.</Description>
     <RepoUrl>https://habsi.net</RepoUrl>
     <Tags>translation;dialogue;offline;arabic;accessibility</Tags>
     <CategoryTags>ui;utility</CategoryTags>

@@ -19,7 +19,7 @@ public sealed class ConfigWindow : Window
         : base("Lisan###LisanConfig")
     {
         this.plugin = plugin;
-        Size = new Vector2(480, 520);
+        Size = new Vector2(500, 560);
         SizeCondition = ImGuiCond.FirstUseEver;
     }
 
@@ -66,7 +66,7 @@ public sealed class ConfigWindow : Window
         }
 
         ImGui.Separator();
-        ImGui.TextDisabled($"{Brand.Command}   ·   {Brand.Command} config   ·   {Brand.Command} lang ar   ·   {Brand.Command} test");
+        ImGui.TextDisabled($"{Brand.Command}   ·   config   ·   history   ·   copy   ·   speak   ·   stop   ·   lang ar   ·   test");
         ImGui.Spacing();
         ImGui.TextDisabled("Made with love at");
         ImGui.SameLine();
@@ -123,7 +123,19 @@ public sealed class ConfigWindow : Window
         Toggle("BattleTalk", () => cfg.TranslateBattleTalk, v => cfg.TranslateBattleTalk = v);
         Toggle("TalkSubtitle (cutscenes)", () => cfg.TranslateTalkSubtitle, v => cfg.TranslateTalkSubtitle = v);
         Toggle("Dialogue choices", () => cfg.TranslateChoices, v => cfg.TranslateChoices = v);
+        Toggle("Yes / No prompts", () => cfg.TranslateYesNo, v => cfg.TranslateYesNo = v);
         ImGui.TextDisabled("Translation is written onto the game balloon. Scripts the game font cannot draw (Arabic, CJK, …) use a plugin font on the same balloon.");
+
+        ImGui.Spacing();
+        ImGui.Text("History");
+        Toggle("Save dialogue history", () => cfg.SaveHistory, v => cfg.SaveHistory = v);
+        Toggle("Auto-copy last translation", () => cfg.AutoCopyTranslation, v => cfg.AutoCopyTranslation = v);
+        Toggle("Ctrl+Alt hotkeys", () => cfg.EnableHotkeys, v => cfg.EnableHotkeys = v);
+        ImGui.TextDisabled("Ctrl+Alt+C copy  ·  H history  ·  S speak  ·  X stop TTS");
+        if (ImGui.Button("Open history"))
+            plugin.ToggleHistoryUi();
+        ImGui.SameLine();
+        ImGui.TextDisabled($"{Brand.Command} history   ·   {Plugin.History.Count} lines");
 
         ImGui.Spacing();
         ImGui.Text("Balloon text");
@@ -173,6 +185,8 @@ public sealed class ConfigWindow : Window
                 Plugin.Tts.Stop();
             Plugin.Tts.RecheckVoice();
         });
+        Toggle("Only speak when the game is focused", () => cfg.TtsOnlyWhenFocused, v => cfg.TtsOnlyWhenFocused = v);
+        Toggle("Also speak translated choices", () => cfg.TtsSpeakChoices, v => cfg.TtsSpeakChoices = v);
         ImGui.TextWrapped(Plugin.Tts.Status);
 
         if (cfg.EnableTts && Plugin.Tts.MissingArabicVoice)
@@ -215,6 +229,12 @@ public sealed class ConfigWindow : Window
 
         if (ImGui.Button("Test TTS"))
             Plugin.Tts.Test();
+        ImGui.SameLine();
+        if (ImGui.Button("Replay last"))
+            Plugin.Tts.Replay();
+        ImGui.SameLine();
+        if (ImGui.Button("Stop TTS"))
+            Plugin.Tts.Stop();
 
         ImGui.Spacing();
         ImGui.Text("Custom model folder (optional)");

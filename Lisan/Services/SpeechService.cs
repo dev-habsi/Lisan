@@ -76,9 +76,11 @@ public sealed class SpeechService : IDisposable
         });
     }
 
-    public void SpeakDialogue(string? text)
+    public void SpeakDialogue(string? text, bool ignoreFocus = false)
     {
         if (!Plugin.Configuration.EnableTts)
+            return;
+        if (!ignoreFocus && Plugin.Configuration.TtsOnlyWhenFocused && !GameIsForeground())
             return;
         if (!string.Equals(Plugin.Configuration.TargetLanguage, "ar", StringComparison.OrdinalIgnoreCase))
             return;
@@ -99,10 +101,22 @@ public sealed class SpeechService : IDisposable
         Task.Run(() => SpeakCore(spoken));
     }
 
+    public void Replay()
+    {
+        var text = lastSpoken;
+        if (string.IsNullOrWhiteSpace(text))
+            text = Plugin.History.Last?.Translation ?? "";
+        if (string.IsNullOrWhiteSpace(text))
+            return;
+
+        lastSpoken = string.Empty;
+        SpeakDialogue(text, ignoreFocus: true);
+    }
+
     public void Test()
     {
         lastSpoken = string.Empty;
-        SpeakDialogue("مرحبا. هذا اختبار للصوت العربي.");
+        SpeakDialogue("مرحبا. هذا اختبار للصوت العربي.", ignoreFocus: true);
     }
 
     public void Stop()
@@ -122,6 +136,28 @@ public sealed class SpeechService : IDisposable
         {
             synth?.Dispose();
             synth = null;
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern nint GetForegroundWindow();
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(nint hWnd, out uint processId);
+
+    private static bool GameIsForeground()
+    {
+        try
+        {
+            var fg = GetForegroundWindow();
+            if (fg == nint.Zero)
+                return false;
+            GetWindowThreadProcessId(fg, out var pid);
+            return pid == (uint)Environment.ProcessId;
+        }
+        catch
+        {
+            return true;
         }
     }
 

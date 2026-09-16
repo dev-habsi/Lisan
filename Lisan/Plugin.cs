@@ -3,6 +3,8 @@ using System.IO;
 using System.Threading.Tasks;
 using Lisan.Services;
 using Lisan.Windows;
+using Dalamud.Bindings.ImGui;
+using Dalamud.Game.ClientState.Keys;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
@@ -20,11 +22,13 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IGameGui GameGui { get; private set; } = null!;
     [PluginService] internal static IFramework Framework { get; private set; } = null!;
     [PluginService] internal static IPluginLog Log { get; private set; } = null!;
+    [PluginService] internal static IKeyState KeyState { get; private set; } = null!;
 
     private const string CommandName = Brand.Command;
     private const string LegacyCommandName = Brand.LegacyCommand;
 
     public static Configuration Configuration { get; private set; } = null!;
+    public static DialogueHistory History { get; private set; } = null!;
 
     public TranslationCache Cache { get; }
     public LocalTranslator Translator { get; }
@@ -33,7 +37,14 @@ public sealed class Plugin : IDalamudPlugin
 
     public readonly WindowSystem WindowSystem = new(Brand.Name);
     private ConfigWindow ConfigWindow { get; }
+    private HistoryWindow HistoryWindow { get; }
     public DialogueOverlay Overlay { get; }
+
+    private static string? pendingClipboard;
+    private bool prevHotCopy;
+    private bool prevHotHist;
+    private bool prevHotSpeak;
+    private bool prevHotStop;
 
     public Plugin()
     {
@@ -46,20 +57,23 @@ public sealed class Plugin : IDalamudPlugin
         var cacheDir = PluginInterface.GetPluginConfigDirectory();
 
         Cache = new TranslationCache(cacheDir);
+        History = new DialogueHistory(cacheDir);
         Translator = new LocalTranslator(Cache, pluginDir, Configuration.ModelDirectory);
         Tts = new SpeechService();
         Watcher = new AddonDialogueWatcher(Translator);
         Watcher.Register();
-        Framework.Update += Watcher.OnFrameworkUpdate;
+        Framework.Update += OnFrameworkUpdate;
 
         ConfigWindow = new ConfigWindow(this);
+        HistoryWindow = new HistoryWindow(this);
         Overlay = new DialogueOverlay(this);
         WindowSystem.AddWindow(ConfigWindow);
+        WindowSystem.AddWindow(HistoryWindow);
         WindowSystem.AddWindow(Overlay);
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = $"Toggle {Brand.Name}. '{Brand.Command} config' | '{Brand.Command} lang ar' | '{Brand.Command} test'",
+            HelpMessage = $"Toggle {Brand.Name}. {Brand.Command} config | history | copy | speak | stop | lang ar | test",
         });
         CommandManager.AddHandler(LegacyCommandName, new CommandInfo(OnCommand)
         {
@@ -67,7 +81,7 @@ public sealed class Plugin : IDalamudPlugin
             ShowInHelp = false,
         });
 
-        PluginInterface.UiBuilder.Draw += WindowSystem.Draw;
+        PluginInterface.UiBuilder.Draw += OnDraw;
         PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigUi;
         PluginInterface.UiBuilder.OpenMainUi += ToggleConfigUi;
         // Story Talk is a cutscene: Dalamud hides plugin ImGui unless this is on.
@@ -95,8 +109,8 @@ public sealed class Plugin : IDalamudPlugin
 
     public void Dispose()
     {
-        Framework.Update -= Watcher.OnFrameworkUpdate;
-        PluginInterface.UiBuilder.Draw -= WindowSystem.Draw;
+        Framework.Update -= OnFrameworkUpdate;
+        PluginInterface.UiBuilder.Draw -= OnDraw;
         PluginInterface.UiBuilder.OpenConfigUi -= ToggleConfigUi;
         PluginInterface.UiBuilder.OpenMainUi -= ToggleConfigUi;
 
@@ -105,6 +119,7 @@ public sealed class Plugin : IDalamudPlugin
         Watcher.Dispose();
         Tts.Dispose();
         Translator.Dispose();
+        History.Dispose();
         Cache.Dispose();
         CommandManager.RemoveHandler(CommandName);
         CommandManager.RemoveHandler(LegacyCommandName);
@@ -152,6 +167,42 @@ public sealed class Plugin : IDalamudPlugin
             case "cfg":
                 ToggleConfigUi();
                 break;
+            case "history":
+            case "hist":
+            case "log":
+                ToggleHistoryUi();
+                break;
+            case "copy":
+                CopyLastTranslation();
+                break;
+            case "speak":
+            case "replay":
+            case "tts":
+                if (!Configuration.EnableTts)
+                    Log.Information($"{Brand.Name}: enable TTS in config first.");
+                else
+                    Tts.Replay();
+                break;
+            case "stop":
+                Tts.Stop();
+                break;
+            case "export":
+            {
+                var file = History.WriteExportFile();
+                Log.Information(file is null
+                    ? $"{Brand.Name}: could not export history."
+                    : $"{Brand.Name} history exported: {file}");
+                break;
+            }
+            case "help":
+                Log.Information($"{Brand.Name}: {Brand.Command} | config | history | copy | speak | stop | export | lang ar | test");
+                break;
+            case "status":
+            {
+                var cur = TargetLanguages.Current();
+                Log.Information($"{Brand.Name}: {(Configuration.Enabled ? "on" : "off")} · {cur.Code} ({cur.Name}) · TTS {(Configuration.EnableTts ? Tts.Status : "off")} · history {History.Count}");
+                break;
+            }
             case "test":
                 RunTestTranslation();
                 break;
@@ -185,7 +236,8 @@ public sealed class Plugin : IDalamudPlugin
             && !AddonDialogueWatcher.IsNamedAddonVisible("TalkSubtitle")
             && !AddonDialogueWatcher.IsNamedAddonVisible("SelectString")
             && !AddonDialogueWatcher.IsNamedAddonVisible("SelectIconString")
-            && !AddonDialogueWatcher.IsNamedAddonVisible("CutSceneSelectString"))
+            && !AddonDialogueWatcher.IsNamedAddonVisible("CutSceneSelectString")
+            && !AddonDialogueWatcher.IsNamedAddonVisible("SelectYesno"))
         {
             Log.Information($"{Brand.Name} test: open Talk/BattleTalk/choices first, then {Brand.Command} test");
             return;
@@ -206,12 +258,94 @@ public sealed class Plugin : IDalamudPlugin
             _ = Framework.RunOnFrameworkThread(() =>
             {
                 Watcher.SetTestLineForSource(source, sample, translated);
+                History.Add(source, "", sample, translated);
                 Tts.SpeakDialogue(translated);
             });
         });
     }
 
     public void ToggleConfigUi() => ConfigWindow.Toggle();
+
+    public void ToggleHistoryUi() => HistoryWindow.Toggle();
+
+    public static void CopyText(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return;
+        pendingClipboard = text;
+    }
+
+    public void CopyLastTranslation()
+    {
+        var text = History.Last?.Translation;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            Log.Information($"{Brand.Name}: no translation to copy yet.");
+            return;
+        }
+
+        CopyText(text);
+        Log.Information($"{Brand.Name}: copied last translation.");
+    }
+
+    private void OnDraw()
+    {
+        var clip = pendingClipboard;
+        if (clip is not null)
+        {
+            pendingClipboard = null;
+            try { ImGui.SetClipboardText(clip); }
+            catch (Exception ex) { Log.Warning(ex, "Clipboard copy failed"); }
+        }
+
+        WindowSystem.Draw();
+    }
+
+    private void OnFrameworkUpdate(IFramework framework)
+    {
+        Watcher.OnFrameworkUpdate(framework);
+        PollHotkeys();
+    }
+
+    private void PollHotkeys()
+    {
+        if (!Configuration.EnableHotkeys)
+        {
+            prevHotCopy = prevHotHist = prevHotSpeak = prevHotStop = false;
+            return;
+        }
+
+        var ctrl = Down(VirtualKey.CONTROL) || Down(VirtualKey.LCONTROL) || Down(VirtualKey.RCONTROL);
+        var alt = Down(VirtualKey.MENU) || Down(VirtualKey.LMENU) || Down(VirtualKey.RMENU);
+        if (!ctrl || !alt)
+        {
+            prevHotCopy = prevHotHist = prevHotSpeak = prevHotStop = false;
+            return;
+        }
+
+        Edge(VirtualKey.C, ref prevHotCopy, CopyLastTranslation);
+        Edge(VirtualKey.H, ref prevHotHist, ToggleHistoryUi);
+        Edge(VirtualKey.S, ref prevHotSpeak, () =>
+        {
+            if (Configuration.EnableTts)
+                Tts.Replay();
+        });
+        Edge(VirtualKey.X, ref prevHotStop, Tts.Stop);
+    }
+
+    private static bool Down(VirtualKey key)
+    {
+        try { return KeyState[key]; }
+        catch { return false; }
+    }
+
+    private static void Edge(VirtualKey key, ref bool prev, Action act)
+    {
+        var now = Down(key);
+        if (now && !prev)
+            act();
+        prev = now;
+    }
 
     /// <summary>
     /// Copy settings JSON and cache from the old DialogueAr config dir if Lisan has none yet.

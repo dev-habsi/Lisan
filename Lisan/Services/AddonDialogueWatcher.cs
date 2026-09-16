@@ -54,6 +54,7 @@ public sealed class AddonDialogueWatcher : IDisposable
     private readonly Dictionary<string, string> choiceOriginal = new();
     private readonly Dictionary<string, string> choiceTranslated = new();
     private readonly HashSet<string> choiceInflight = [];
+    private readonly HashSet<string> choiceLogged = [];
     private string choiceAddon = string.Empty;
 
     public AddonDialogueWatcher(LocalTranslator translator)
@@ -104,6 +105,10 @@ public sealed class AddonDialogueWatcher : IDisposable
         Plugin.AddonLifecycle.RegisterListener(AddonEvent.PostDraw, "CutSceneSelectString", OnCutSceneSelectString);
         Plugin.AddonLifecycle.RegisterListener(AddonEvent.PostRefresh, "CutSceneSelectString", OnCutSceneSelectString);
         Plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "CutSceneSelectString", OnCutSceneSelectStringClosed);
+
+        Plugin.AddonLifecycle.RegisterListener(AddonEvent.PostDraw, "SelectYesno", OnSelectYesNo);
+        Plugin.AddonLifecycle.RegisterListener(AddonEvent.PostRefresh, "SelectYesno", OnSelectYesNo);
+        Plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "SelectYesno", OnSelectYesNoClosed);
     }
 
     public void Dispose()
@@ -120,6 +125,8 @@ public sealed class AddonDialogueWatcher : IDisposable
         Plugin.AddonLifecycle.UnregisterListener(OnSelectIconStringClosed);
         Plugin.AddonLifecycle.UnregisterListener(OnCutSceneSelectString);
         Plugin.AddonLifecycle.UnregisterListener(OnCutSceneSelectStringClosed);
+        Plugin.AddonLifecycle.UnregisterListener(OnSelectYesNo);
+        Plugin.AddonLifecycle.UnregisterListener(OnSelectYesNoClosed);
         foreach (var pin in textPins.Values)
         {
             if (pin.IsAllocated)
@@ -161,6 +168,7 @@ public sealed class AddonDialogueWatcher : IDisposable
             "SelectString" => "SelectString",
             "SelectIconString" => "SelectIconString",
             "CutSceneSelectString" => "CutSceneSelectString",
+            "SelectYesno" => "SelectYesno",
             "Talk" => "Talk",
             _ => null,
         };
@@ -191,6 +199,8 @@ public sealed class AddonDialogueWatcher : IDisposable
     private void OnSelectString(AddonEvent type, AddonArgs args) => TranslateChoiceAddon("SelectString");
     private void OnSelectIconString(AddonEvent type, AddonArgs args) => TranslateChoiceAddon("SelectIconString");
     private void OnCutSceneSelectString(AddonEvent type, AddonArgs args) => TranslateChoiceAddon("CutSceneSelectString");
+    private void OnSelectYesNo(AddonEvent type, AddonArgs args) => TranslateChoiceAddon("SelectYesno");
+    private void OnSelectYesNoClosed(AddonEvent type, AddonArgs args) => ClearChoices();
 
     private void OnTalk(AddonEvent type, AddonArgs args)
     {
@@ -218,7 +228,10 @@ public sealed class AddonDialogueWatcher : IDisposable
 
     private void TranslateChoiceAddon(string addonName)
     {
-        if (!Plugin.Configuration.Enabled || !Plugin.Configuration.TranslateChoices)
+        var allowed = addonName == "SelectYesno"
+            ? Plugin.Configuration.TranslateYesNo
+            : Plugin.Configuration.TranslateChoices;
+        if (!Plugin.Configuration.Enabled || !allowed)
             return;
 
         var scanned = ScanChoiceNodes(addonName);
@@ -266,6 +279,7 @@ public sealed class AddonDialogueWatcher : IDisposable
             {
                 translation = cached;
                 choiceTranslated[key] = cached;
+                RecordChoice(addonName, english, cached);
             }
             else if (choiceTranslated.TryGetValue(key, out var done))
             {
@@ -324,6 +338,7 @@ public sealed class AddonDialogueWatcher : IDisposable
                 if (string.IsNullOrWhiteSpace(translated))
                     translated = captured;
                 choiceTranslated[key] = translated;
+                RecordChoice(capturedAddon, captured, translated);
                 if (Plugin.Configuration.LogTranslations)
                     Plugin.Log.Information($"[{capturedAddon} #{capturedNode}] {captured} => {translated}");
             });
@@ -337,7 +352,20 @@ public sealed class AddonDialogueWatcher : IDisposable
         choiceOriginal.Clear();
         choiceTranslated.Clear();
         choiceInflight.Clear();
+        choiceLogged.Clear();
         choiceAddon = string.Empty;
+    }
+
+    private void RecordChoice(string source, string english, string translation)
+    {
+        if (string.IsNullOrWhiteSpace(translation) || TargetLanguages.IsBusyPlaceholder(translation))
+            return;
+        var sig = source + "|" + english + "|" + translation;
+        if (!choiceLogged.Add(sig))
+            return;
+        Plugin.History.Add(source, "", english, translation);
+        if (Plugin.Configuration.TtsSpeakChoices)
+            Plugin.Tts.SpeakDialogue(translation);
     }
 
     private sealed class ScannedChoice
@@ -511,6 +539,7 @@ public sealed class AddonDialogueWatcher : IDisposable
 
             ApplyNativeBody(capturedAddon, capturedNode, display);
 
+            Plugin.History.Add(capturedSource, capturedSpeaker, captured, translated);
             Plugin.Tts.SpeakDialogue(translated);
 
             if (Plugin.Configuration.LogTranslations)

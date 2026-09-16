@@ -7,7 +7,7 @@ namespace Lisan;
 [Serializable]
 public class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 8;
+    public int Version { get; set; } = 9;
 
     /// <summary>ISO-ish code from <see cref="TargetLanguages"/>, or "custom". Default Arabic (existing installs).</summary>
     public string TargetLanguage { get; set; } = "ar";
@@ -20,6 +20,7 @@ public class Configuration : IPluginConfiguration
     public bool TranslateBattleTalk { get; set; } = true;
     public bool TranslateTalkSubtitle { get; set; } = true;
     public bool TranslateChoices { get; set; } = true;
+    public bool TranslateYesNo { get; set; } = true;
 
     /// <summary>Plugin-font balloon size in pixels (Arabic, CJK, …).</summary>
     public float BalloonFontSize { get; set; } = 26f;
@@ -50,6 +51,11 @@ public class Configuration : IPluginConfiguration
     public bool EnableTts { get; set; } = false;
     public int TtsVolume { get; set; } = 80;
     public int TtsRate { get; set; } = 0;
+    public bool TtsOnlyWhenFocused { get; set; } = true;
+    public bool TtsSpeakChoices { get; set; } = false;
+    public bool SaveHistory { get; set; } = true;
+    public bool AutoCopyTranslation { get; set; } = false;
+    public bool EnableHotkeys { get; set; } = true;
 
     public void Save() => Plugin.PluginInterface.SavePluginConfig(this);
 
@@ -59,9 +65,9 @@ public class Configuration : IPluginConfiguration
             || string.Equals(TargetLanguage, "fr", StringComparison.OrdinalIgnoreCase))
             TargetLanguage = "ar";
 
-        if (Version < 8)
+        if (Version < 9)
         {
-            Version = 8;
+            Version = 9;
             Save();
         }
     }
