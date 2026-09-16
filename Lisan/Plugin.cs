@@ -23,6 +23,8 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IFramework Framework { get; private set; } = null!;
     [PluginService] internal static IPluginLog Log { get; private set; } = null!;
     [PluginService] internal static IKeyState KeyState { get; private set; } = null!;
+    [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
+    [PluginService] internal static IObjectTable ObjectTable { get; private set; } = null!;
 
     private const string CommandName = Brand.Command;
     private const string LegacyCommandName = Brand.LegacyCommand;
@@ -34,6 +36,8 @@ public sealed class Plugin : IDalamudPlugin
     public LocalTranslator Translator { get; }
     public static SpeechService Tts { get; private set; } = null!;
     public AddonDialogueWatcher Watcher { get; }
+    public ChatTranslator Chat { get; }
+    private ChatWindow ChatWindow { get; }
 
     public readonly WindowSystem WindowSystem = new(Brand.Name);
     private ConfigWindow ConfigWindow { get; }
@@ -45,6 +49,7 @@ public sealed class Plugin : IDalamudPlugin
     private bool prevHotHist;
     private bool prevHotSpeak;
     private bool prevHotStop;
+    private bool prevHotChat;
 
     public Plugin()
     {
@@ -62,18 +67,22 @@ public sealed class Plugin : IDalamudPlugin
         Tts = new SpeechService();
         Watcher = new AddonDialogueWatcher(Translator);
         Watcher.Register();
+        Chat = new ChatTranslator(Translator);
+        Chat.Register();
         Framework.Update += OnFrameworkUpdate;
 
         ConfigWindow = new ConfigWindow(this);
         HistoryWindow = new HistoryWindow(this);
+        ChatWindow = new ChatWindow(this);
         Overlay = new DialogueOverlay(this);
         WindowSystem.AddWindow(ConfigWindow);
         WindowSystem.AddWindow(HistoryWindow);
+        WindowSystem.AddWindow(ChatWindow);
         WindowSystem.AddWindow(Overlay);
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = $"Toggle {Brand.Name}. {Brand.Command} config | history | copy | speak | stop | lang ar | test",
+            HelpMessage = $"Toggle {Brand.Name}. {Brand.Command} config | chat | history | copy | speak | stop | lang ar",
         });
         CommandManager.AddHandler(LegacyCommandName, new CommandInfo(OnCommand)
         {
@@ -89,6 +98,8 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.DisableAutomaticUiHide = true;
 
         Overlay.IsOpen = true;
+        if (Configuration.TranslateChat)
+            ChatWindow.IsOpen = true;
 
         Task.Run(() =>
         {
@@ -116,7 +127,9 @@ public sealed class Plugin : IDalamudPlugin
 
         WindowSystem.RemoveAllWindows();
         Overlay.Dispose();
+        ChatWindow.Dispose();
         Watcher.Dispose();
+        Chat.Dispose();
         Tts.Dispose();
         Translator.Dispose();
         History.Dispose();
@@ -131,6 +144,7 @@ public sealed class Plugin : IDalamudPlugin
         Watcher.Clear();
         Translator.Restart();
         Overlay.ReloadFont();
+        ChatWindow.ReloadFont();
 
         var lang = TargetLanguages.Current();
         Log.Information($"{Brand.Name} language → {lang.Code} ({lang.Name}). Model: {Translator.ModelDirectory}");
@@ -172,6 +186,9 @@ public sealed class Plugin : IDalamudPlugin
             case "log":
                 ToggleHistoryUi();
                 break;
+            case "chat":
+                ToggleChatUi();
+                break;
             case "copy":
                 CopyLastTranslation();
                 break;
@@ -195,7 +212,7 @@ public sealed class Plugin : IDalamudPlugin
                 break;
             }
             case "help":
-                Log.Information($"{Brand.Name}: {Brand.Command} | config | history | copy | speak | stop | export | lang ar | test");
+                Log.Information($"{Brand.Name}: {Brand.Command} | config | chat | history | copy | speak | stop | export | lang ar | test");
                 break;
             case "status":
             {
@@ -268,6 +285,10 @@ public sealed class Plugin : IDalamudPlugin
 
     public void ToggleHistoryUi() => HistoryWindow.Toggle();
 
+    public void ToggleChatUi() => ChatWindow.Toggle();
+
+    public void ShowChatUi() => ChatWindow.IsOpen = true;
+
     public static void CopyText(string text)
     {
         if (string.IsNullOrWhiteSpace(text))
@@ -311,7 +332,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         if (!Configuration.EnableHotkeys)
         {
-            prevHotCopy = prevHotHist = prevHotSpeak = prevHotStop = false;
+            prevHotCopy = prevHotHist = prevHotSpeak = prevHotStop = prevHotChat = false;
             return;
         }
 
@@ -319,12 +340,13 @@ public sealed class Plugin : IDalamudPlugin
         var alt = Down(VirtualKey.MENU) || Down(VirtualKey.LMENU) || Down(VirtualKey.RMENU);
         if (!ctrl || !alt)
         {
-            prevHotCopy = prevHotHist = prevHotSpeak = prevHotStop = false;
+            prevHotCopy = prevHotHist = prevHotSpeak = prevHotStop = prevHotChat = false;
             return;
         }
 
         Edge(VirtualKey.C, ref prevHotCopy, CopyLastTranslation);
         Edge(VirtualKey.H, ref prevHotHist, ToggleHistoryUi);
+        Edge(VirtualKey.L, ref prevHotChat, ToggleChatUi);
         Edge(VirtualKey.S, ref prevHotSpeak, () =>
         {
             if (Configuration.EnableTts)

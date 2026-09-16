@@ -7,7 +7,7 @@ namespace Lisan;
 [Serializable]
 public class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 9;
+    public int Version { get; set; } = 10;
 
     /// <summary>ISO-ish code from <see cref="TargetLanguages"/>, or "custom". Default Arabic (existing installs).</summary>
     public string TargetLanguage { get; set; } = "ar";
@@ -57,6 +57,19 @@ public class Configuration : IPluginConfiguration
     public bool AutoCopyTranslation { get; set; } = false;
     public bool EnableHotkeys { get; set; } = true;
 
+    /// <summary>Translate player chat into the Lisan chat window. Original game log is left intact.</summary>
+    public bool TranslateChat { get; set; } = true;
+    public bool TranslateChatPlayers { get; set; } = true;
+    public bool TranslateChatParty { get; set; } = true;
+    public bool TranslateChatLinkshell { get; set; } = true;
+    public bool TranslateChatNpc { get; set; } = false;
+    public bool TranslateChatSystem { get; set; } = false;
+    public bool TranslateChatEmotes { get; set; } = false;
+    public bool TranslateOwnChat { get; set; } = false;
+    /// <summary>Also print Latin translations into Echo. Off for Arabic/CJK (game font tofu).</summary>
+    public bool ChatPrintNative { get; set; } = false;
+    public bool TtsSpeakChat { get; set; } = false;
+
     public void Save() => Plugin.PluginInterface.SavePluginConfig(this);
 
     public void Migrate()
@@ -65,9 +78,9 @@ public class Configuration : IPluginConfiguration
             || string.Equals(TargetLanguage, "fr", StringComparison.OrdinalIgnoreCase))
             TargetLanguage = "ar";
 
-        if (Version < 9)
+        if (Version < 10)
         {
-            Version = 9;
+            Version = 10;
             Save();
         }
     }

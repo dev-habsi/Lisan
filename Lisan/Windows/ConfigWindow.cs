@@ -19,7 +19,7 @@ public sealed class ConfigWindow : Window
         : base("Lisan###LisanConfig")
     {
         this.plugin = plugin;
-        Size = new Vector2(500, 560);
+        Size = new Vector2(500, 620);
         SizeCondition = ImGuiCond.FirstUseEver;
     }
 
@@ -66,7 +66,7 @@ public sealed class ConfigWindow : Window
         }
 
         ImGui.Separator();
-        ImGui.TextDisabled($"{Brand.Command}   ·   config   ·   history   ·   copy   ·   speak   ·   stop   ·   lang ar   ·   test");
+        ImGui.TextDisabled($"{Brand.Command}   ·   config   ·   chat   ·   history   ·   copy   ·   speak   ·   stop   ·   lang ar");
         ImGui.Spacing();
         ImGui.TextDisabled("Made with love at");
         ImGui.SameLine();
@@ -127,11 +127,33 @@ public sealed class ConfigWindow : Window
         ImGui.TextDisabled("Translation is written onto the game balloon. Scripts the game font cannot draw (Arabic, CJK, …) use a plugin font on the same balloon.");
 
         ImGui.Spacing();
+        ImGui.Text("Chat");
+        Toggle("Translate chat into Lisan window", () => cfg.TranslateChat, v =>
+        {
+            cfg.TranslateChat = v;
+            if (v)
+                plugin.ShowChatUi();
+        });
+        Toggle("Say / Shout / Yell / Tell", () => cfg.TranslateChatPlayers, v => cfg.TranslateChatPlayers = v);
+        Toggle("Party / Alliance", () => cfg.TranslateChatParty, v => cfg.TranslateChatParty = v);
+        Toggle("FC / Linkshell / Novice", () => cfg.TranslateChatLinkshell, v => cfg.TranslateChatLinkshell = v);
+        Toggle("NPC lines that also appear in chat", () => cfg.TranslateChatNpc, v => cfg.TranslateChatNpc = v);
+        Toggle("System notices", () => cfg.TranslateChatSystem, v => cfg.TranslateChatSystem = v);
+        Toggle("Emotes", () => cfg.TranslateChatEmotes, v => cfg.TranslateChatEmotes = v);
+        Toggle("Translate your own outgoing chat", () => cfg.TranslateOwnChat, v => cfg.TranslateOwnChat = v);
+        Toggle("Print Latin translations into Echo", () => cfg.ChatPrintNative, v => cfg.ChatPrintNative = v);
+        ImGui.TextDisabled("Original English stays in the game log (item links keep working). Arabic / CJK cannot draw in game chat — they only show in the Lisan window.");
+        if (ImGui.Button("Open chat window"))
+            plugin.ShowChatUi();
+        ImGui.SameLine();
+        ImGui.TextDisabled($"{Brand.Command} chat   ·   Ctrl+Alt+L");
+
+        ImGui.Spacing();
         ImGui.Text("History");
         Toggle("Save dialogue history", () => cfg.SaveHistory, v => cfg.SaveHistory = v);
         Toggle("Auto-copy last translation", () => cfg.AutoCopyTranslation, v => cfg.AutoCopyTranslation = v);
         Toggle("Ctrl+Alt hotkeys", () => cfg.EnableHotkeys, v => cfg.EnableHotkeys = v);
-        ImGui.TextDisabled("Ctrl+Alt+C copy  ·  H history  ·  S speak  ·  X stop TTS");
+        ImGui.TextDisabled("Ctrl+Alt+C copy  ·  H history  ·  L chat  ·  S speak  ·  X stop TTS");
         if (ImGui.Button("Open history"))
             plugin.ToggleHistoryUi();
         ImGui.SameLine();
@@ -187,6 +209,7 @@ public sealed class ConfigWindow : Window
         });
         Toggle("Only speak when the game is focused", () => cfg.TtsOnlyWhenFocused, v => cfg.TtsOnlyWhenFocused = v);
         Toggle("Also speak translated choices", () => cfg.TtsSpeakChoices, v => cfg.TtsSpeakChoices = v);
+        Toggle("Also speak translated chat", () => cfg.TtsSpeakChat, v => cfg.TtsSpeakChat = v);
         ImGui.TextWrapped(Plugin.Tts.Status);
 
         if (cfg.EnableTts && Plugin.Tts.MissingArabicVoice)
