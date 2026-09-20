@@ -162,7 +162,9 @@ public sealed class DialogueOverlay : Window, IDisposable
         ImGui.SetWindowFontScale(scale);
 
         var maxChars = DialogueDisplay.EstimateMaxChars(wrapW, fontPx);
-        var textCol = ReadableTextColor(cfg.BalloonTextColor, line.Busy);
+        var textCol = cfg.BalloonTextColor;
+        if (line.Busy)
+            textCol = new Vector4(textCol.X * 0.72f, textCol.Y * 0.72f, textCol.Z * 0.72f, textCol.W * 0.88f);
 
         void DrawTranslation()
         {
@@ -238,7 +240,9 @@ public sealed class DialogueOverlay : Window, IDisposable
                 return;
 
             var wrapW = Math.Max(48f, choice.Size.X);
-            var textCol = ReadableTextColor(cfg.BalloonTextColor, choice.Busy);
+            var textCol = cfg.BalloonTextColor;
+            if (choice.Busy)
+                textCol = new Vector4(textCol.X * 0.72f, textCol.Y * 0.72f, textCol.Z * 0.72f, textCol.W * 0.88f);
 
             ImGui.SetCursorScreenPos(choice.Pos);
 
@@ -284,48 +288,10 @@ public sealed class DialogueOverlay : Window, IDisposable
         ImGui.SetWindowFontScale(1f);
     }
 
-    /// <summary>Force bright text — dark config colors are unreadable on the balloon.</summary>
-    private static Vector4 ReadableTextColor(Vector4 color, bool busy)
-    {
-        var lum = (0.2126f * color.X) + (0.7152f * color.Y) + (0.0722f * color.Z);
-        if (lum < 0.55f)
-            color = new Vector4(1f, 1f, 1f, Math.Max(color.W, 1f));
-        else
-            color = new Vector4(color.X, color.Y, color.Z, Math.Max(color.W, 1f));
-
-        if (busy)
-            return new Vector4(color.X * 0.92f, color.Y * 0.92f, color.Z * 0.92f, color.W);
-
-        return color;
-    }
-
-    /// <summary>Bright fill + black outline for contrast on the game balloon (no background panel).</summary>
+    /// <summary>Draw colored overlay text on the game balloon.</summary>
     private static void DrawClearText(Vector4 color, string text)
     {
-        var screen = ImGui.GetCursorScreenPos();
-        var size = ImGui.CalcTextSize(text);
-        if (size.X <= 1f || size.Y <= 1f)
-        {
-            ImGui.Dummy(new Vector2(1f, size.Y > 1f ? size.Y : ImGui.GetTextLineHeight()));
-            return;
-        }
-
-        var dl = ImGui.GetWindowDrawList();
-        var outline = ImGui.GetColorU32(new Vector4(0f, 0f, 0f, 1f));
-        var fill = ImGui.GetColorU32(color);
-        const int radius = 3;
-        for (var y = -radius; y <= radius; y++)
-        {
-            for (var x = -radius; x <= radius; x++)
-            {
-                if (x == 0 && y == 0)
-                    continue;
-                dl.AddText(screen + new Vector2(x, y), outline, text);
-            }
-        }
-
-        dl.AddText(screen, fill, text);
-        ImGui.Dummy(size);
+        ImGui.TextColored(color, text);
     }
 
     private void TryBuildFont()

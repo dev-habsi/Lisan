@@ -7,7 +7,7 @@ namespace Lisan;
 [Serializable]
 public class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 12;
+    public int Version { get; set; } = 15;
 
     /// <summary>ISO-ish code from <see cref="TargetLanguages"/>, or "custom". Default Arabic (existing installs).</summary>
     public string TargetLanguage { get; set; } = "ar";
@@ -23,10 +23,10 @@ public class Configuration : IPluginConfiguration
     public bool TranslateYesNo { get; set; } = true;
 
     /// <summary>Plugin-font balloon size in pixels (Arabic, CJK, …).</summary>
-    public float BalloonFontSize { get; set; } = 30f;
-    public float BalloonTextR { get; set; } = 1f;
-    public float BalloonTextG { get; set; } = 1f;
-    public float BalloonTextB { get; set; } = 1f;
+    public float BalloonFontSize { get; set; } = 26f;
+    public float BalloonTextR { get; set; } = 0f;
+    public float BalloonTextG { get; set; } = 0f;
+    public float BalloonTextB { get; set; } = 0f;
     public float BalloonTextA { get; set; } = 1f;
 
     public Vector4 BalloonTextColor
@@ -56,19 +56,6 @@ public class Configuration : IPluginConfiguration
     public bool SaveHistory { get; set; } = true;
     public bool AutoCopyTranslation { get; set; } = false;
     public bool EnableHotkeys { get; set; } = true;
-
-    /// <summary>Translate player chat into the Lisan chat window. Original game log is left intact.</summary>
-    public bool TranslateChat { get; set; } = true;
-    public bool TranslateChatPlayers { get; set; } = true;
-    public bool TranslateChatParty { get; set; } = true;
-    public bool TranslateChatLinkshell { get; set; } = true;
-    public bool TranslateChatNpc { get; set; } = false;
-    public bool TranslateChatSystem { get; set; } = false;
-    public bool TranslateChatEmotes { get; set; } = false;
-    public bool TranslateOwnChat { get; set; } = false;
-    /// <summary>Also print Latin translations into Echo. Off for Arabic/CJK (game font tofu).</summary>
-    public bool ChatPrintNative { get; set; } = false;
-    public bool TtsSpeakChat { get; set; } = false;
 
     public void Save() => Plugin.PluginInterface.SavePluginConfig(this);
 
@@ -114,6 +101,41 @@ public class Configuration : IPluginConfiguration
                 BalloonFontSize = 30f;
 
             Version = 12;
+        }
+
+        // Default balloon text: soft grey (was white).
+        if (Version < 13)
+        {
+            const float eps = 0.02f;
+            if (Math.Abs(BalloonTextR - 1f) < eps
+                && Math.Abs(BalloonTextG - 1f) < eps
+                && Math.Abs(BalloonTextB - 1f) < eps)
+            {
+                BalloonTextR = 0.75f;
+                BalloonTextG = 0.75f;
+                BalloonTextB = 0.75f;
+                BalloonTextA = 1f;
+            }
+
+            Version = 13;
+        }
+
+        // Default balloon text: black.
+        if (Version < 14)
+        {
+            BalloonTextR = 0f;
+            BalloonTextG = 0f;
+            BalloonTextB = 0f;
+            BalloonTextA = 1f;
+            Version = 14;
+        }
+
+        // Slightly smaller balloon font.
+        if (Version < 15)
+        {
+            if (BalloonFontSize >= 29f)
+                BalloonFontSize = 26f;
+            Version = 15;
             Save();
         }
     }

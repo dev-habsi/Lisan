@@ -4,7 +4,7 @@
 
 Made with love at **[habsi.net](https://habsi.net)**.
 
-Hooks **Talk**, **BattleTalk**, **TalkSubtitle**, **dialogue choices**, **Yes/No**, and **chat**, translates locally with **Helsinki-NLP Opus-MT** (nothing leaves your PC). NPC lines write onto the balloon. Chat keeps the original English in the game log and shows the translation in a **Lisan chat** window (needed for Arabic — the game font cannot draw it).
+Hooks **Talk**, **BattleTalk**, **TalkSubtitle**, **dialogue choices**, and **Yes/No**, translates locally with **Helsinki-NLP Opus-MT** (nothing leaves your PC). NPC lines write onto the balloon.
 
 Default language is **Arabic**. Pick Japanese, Chinese, or any built-in pack in **General → Target language**.
 
@@ -195,7 +195,6 @@ Every pack’s **token / font** lives in `TargetLanguages.cs`. Worker protocol a
 |---------|--------|
 | `/lisan` | Toggle plugin on/off |
 | `/lisan config` | Open settings |
-| `/lisan chat` | Open the chat translation window |
 | `/lisan history` | Open dialogue history (copy / speak / export) |
 | `/lisan copy` | Copy the last translation |
 | `/lisan speak` | Replay last Arabic TTS line |
@@ -208,7 +207,7 @@ Every pack’s **token / font** lives in `TargetLanguages.cs`. Worker protocol a
 | `/lisan test` | Translate a sample line (Talk/BattleTalk must be open) |
 | `/dialogar` | Same commands (old name, still works) |
 
-Hotkeys (optional, on by default): **Ctrl+Alt+C** copy, **Ctrl+Alt+H** history, **Ctrl+Alt+L** chat, **Ctrl+Alt+S** speak, **Ctrl+Alt+X** stop TTS.
+Hotkeys (optional, on by default): **Ctrl+Alt+C** copy, **Ctrl+Alt+H** history, **Ctrl+Alt+S** speak, **Ctrl+Alt+X** stop TTS.
 
 ---
 
@@ -220,7 +219,6 @@ Hotkeys (optional, on by default): **Ctrl+Alt+C** copy, **Ctrl+Alt+H** history, 
 - **Target language** (built-in list or Custom)  
 - Custom: optional Opus token, RTL checkbox  
 - Translate **Talk** / **BattleTalk** / **TalkSubtitle** / **dialogue choices** / **Yes/No**  
-- **Chat**: Say/Tell, party, FC/LS (NPC + system off). Original stays in the game log. Arabic / CJK only in the Lisan chat window.  
 - Balloon **font size** and **text color** (plugin-font languages: Arabic, CJK, …)  
 - **History**: save last 250 lines, auto-copy, Ctrl+Alt hotkeys, open history window  
 
@@ -232,12 +230,8 @@ Translation always writes onto the game balloon. Arabic / CJK use the plugin fon
 - **Fast translation** (greedy decode, recommended) vs slightly better/slower beams  
 - Warm up translator on load  
 - Optional custom model folder (Apply restarts the worker)  
-- Optional **Speak Arabic with Windows TTS** (volume / rate / test / replay; only when game focused; optional speak choices / chat)  
+- Optional **Speak Arabic with Windows TTS** (volume / rate / test / replay; only when game focused; optional speak choices)  
 - Clear cache / test translate / apply language  
-
-### Chat window
-
-`/lisan chat` — live translations of incoming English chat. Game log is never rewritten (item links keep working). Click a translation to copy.
 
 ### History window
 
@@ -253,17 +247,17 @@ Translation always writes onto the game balloon. Arabic / CJK use the plugin fon
 ## How it works
 
 ```
-Talk / BattleTalk / TalkSubtitle / choices / YesNo     Chat (Say, Party, Tell, …)
-        │                                                    │
-        ▼                                                    ▼
- AddonDialogueWatcher                               ChatTranslator (async queue)
-        │                                                    │
-        ├─ cache hit ──► balloon                             ├─ cache hit ──► Lisan chat window
-        │                                                    │
-        └─ LocalTranslator ── JSON line to Python worker ────┘
+Talk / BattleTalk / TalkSubtitle / choices / YesNo
+        │
+        ▼
+ AddonDialogueWatcher
+        │
+        ├─ cache hit ──► balloon
+        │
+        └─ LocalTranslator ── JSON line to Python worker
                 │
                 ▼
-        Overlay on balloon (RTL)     original chat line left intact
+        Overlay on balloon (RTL / CJK / …)
 ```
 
 - **Addon hooks:** `PostDraw` / `PostRefresh` / `PreFinalize` via `IAddonLifecycle`  
@@ -285,7 +279,6 @@ Lisan/
 ├── TargetLanguages.cs        # Built-in language catalog
 ├── Services/
 │   ├── AddonDialogueWatcher.cs
-│   ├── ChatTranslator.cs     # incoming chat, async, never rewrite game log
 │   ├── DialogueHistory.cs    # last 250 lines, persist + export
 │   ├── SpeechService.cs      # optional Arabic Windows TTS
 │   ├── LocalTranslator.cs
@@ -293,7 +286,6 @@ Lisan/
 │   └── DialogueDisplay.cs    # RTL bake + wrap
 ├── Windows/
 │   ├── ConfigWindow.cs
-│   ├── ChatWindow.cs
 │   ├── HistoryWindow.cs
 │   └── DialogueOverlay.cs
 ├── Models/
@@ -350,8 +342,6 @@ To ship a new built-in pack, keep **Code / Repo / Folder / Font / token** in syn
 | `setup-models.ps1` 404 | Wrong repo id (Japanese is `opus-mt-en-jap`); pass `-Repo` from the model card |
 | Thai / some small pairs fail download | That `opus-mt-en-th` repo may not exist; find another Helsinki repo and use `-Repo` |
 | TTS says no Arabic voice | Install a Desktop Arabic voice (Huma / Naayf) in Windows Speech settings, then Recheck voice |
-| Chat stays English | `/lisan chat` open; Translate chat on; channel toggles; game client language English |
-| Arabic tofu in game chat | Expected — game font has no Arabic. Use the Lisan chat window |
 
 ---
 
