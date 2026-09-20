@@ -7,7 +7,7 @@ namespace Lisan;
 [Serializable]
 public class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 10;
+    public int Version { get; set; } = 12;
 
     /// <summary>ISO-ish code from <see cref="TargetLanguages"/>, or "custom". Default Arabic (existing installs).</summary>
     public string TargetLanguage { get; set; } = "ar";
@@ -23,10 +23,10 @@ public class Configuration : IPluginConfiguration
     public bool TranslateYesNo { get; set; } = true;
 
     /// <summary>Plugin-font balloon size in pixels (Arabic, CJK, …).</summary>
-    public float BalloonFontSize { get; set; } = 26f;
-    public float BalloonTextR { get; set; } = 0.18f;
-    public float BalloonTextG { get; set; } = 0.15f;
-    public float BalloonTextB { get; set; } = 0.12f;
+    public float BalloonFontSize { get; set; } = 30f;
+    public float BalloonTextR { get; set; } = 1f;
+    public float BalloonTextG { get; set; } = 1f;
+    public float BalloonTextB { get; set; } = 1f;
     public float BalloonTextA { get; set; } = 1f;
 
     public Vector4 BalloonTextColor
@@ -79,8 +79,41 @@ public class Configuration : IPluginConfiguration
             TargetLanguage = "ar";
 
         if (Version < 10)
-        {
             Version = 10;
+
+        // Old default was near-black parchment ink; overlay text was hard to see — switch to white.
+        if (Version < 11)
+        {
+            const float eps = 0.02f;
+            if (Math.Abs(BalloonTextR - 0.18f) < eps
+                && Math.Abs(BalloonTextG - 0.15f) < eps
+                && Math.Abs(BalloonTextB - 0.12f) < eps)
+            {
+                BalloonTextR = 1f;
+                BalloonTextG = 1f;
+                BalloonTextB = 1f;
+                BalloonTextA = 1f;
+            }
+
+            Version = 11;
+        }
+
+        // Stronger default readability: larger font + force light text if still dark.
+        if (Version < 12)
+        {
+            var lum = (0.2126f * BalloonTextR) + (0.7152f * BalloonTextG) + (0.0722f * BalloonTextB);
+            if (lum < 0.55f)
+            {
+                BalloonTextR = 1f;
+                BalloonTextG = 1f;
+                BalloonTextB = 1f;
+                BalloonTextA = 1f;
+            }
+
+            if (BalloonFontSize < 28f)
+                BalloonFontSize = 30f;
+
+            Version = 12;
             Save();
         }
     }

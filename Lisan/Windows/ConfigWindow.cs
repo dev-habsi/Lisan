@@ -180,8 +180,8 @@ public sealed class ConfigWindow : Window
 
         if (ImGui.Button("Reset text look"))
         {
-            cfg.BalloonFontSize = 26f;
-            cfg.BalloonTextColor = new Vector4(0.18f, 0.15f, 0.12f, 1f);
+            cfg.BalloonFontSize = 30f;
+            cfg.BalloonTextColor = new Vector4(1f, 1f, 1f, 1f);
             cfg.Save();
             plugin.Overlay.ReloadFont();
         }
