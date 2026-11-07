@@ -33,6 +33,7 @@ public sealed class Plugin : IDalamudPlugin
 
     public TranslationCache Cache { get; }
     public LocalTranslator Translator { get; }
+    public SetupRunner Setup { get; }
     public static SpeechService Tts { get; private set; } = null!;
     public AddonDialogueWatcher Watcher { get; }
 
@@ -59,7 +60,8 @@ public sealed class Plugin : IDalamudPlugin
 
         Cache = new TranslationCache(cacheDir);
         History = new DialogueHistory(cacheDir);
-        Translator = new LocalTranslator(Cache, pluginDir, Configuration.ModelDirectory);
+        Translator = new LocalTranslator(Cache, pluginDir, cacheDir, Configuration.ModelDirectory);
+        Setup = new SetupRunner(pluginDir, cacheDir);
         Tts = new SpeechService();
         Watcher = new AddonDialogueWatcher(Translator);
         Watcher.Register();
@@ -91,6 +93,12 @@ public sealed class Plugin : IDalamudPlugin
 
         Overlay.IsOpen = true;
 
+        if (!Translator.ModelPresent && string.IsNullOrWhiteSpace(Configuration.ModelDirectory))
+        {
+            Log.Warning($"{Brand.Name}: no language pack for '{Configuration.TargetLanguage}' yet — opening Setup.");
+            ConfigWindow.ShowSetup();
+        }
+
         Task.Run(() =>
         {
             if (Configuration.WarmupTranslatorOnLoad)
@@ -105,7 +113,7 @@ public sealed class Plugin : IDalamudPlugin
         });
 
         var lang = TargetLanguages.Current();
-        Log.Information($"{Brand.Name} loaded. Target={lang.Code} ({lang.Name}). With love from {Brand.SiteLabel}. Run Models/setup-models.ps1 -Language {lang.Code} if the model is missing.");
+        Log.Information($"{Brand.Name} loaded. Target={lang.Code} ({lang.Name}). With love from {Brand.SiteLabel}. Model: {Translator.ModelDirectory}");
     }
 
     public void Dispose()
@@ -119,6 +127,7 @@ public sealed class Plugin : IDalamudPlugin
         Overlay.Dispose();
         Watcher.Dispose();
         Tts.Dispose();
+        Setup.Dispose();
         Translator.Dispose();
         History.Dispose();
         Cache.Dispose();
@@ -306,6 +315,8 @@ public sealed class Plugin : IDalamudPlugin
     {
         Watcher.OnFrameworkUpdate(framework);
         PollHotkeys();
+        if (Setup.ConsumeFinishedOk())
+            ApplyLanguage();
     }
 
     private void PollHotkeys()

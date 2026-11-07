@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Text.Json;
 
 namespace Lisan.Services;
 
@@ -12,10 +15,14 @@ namespace Lisan.Services;
 /// </summary>
 public sealed class LocalTranslator : IDisposable
 {
+    private static readonly TimeSpan StartTimeout = TimeSpan.FromSeconds(240);
+
     private readonly TranslationCache cache;
     private readonly string pluginDir;
+    private readonly string configDir;
     private readonly string workerScript;
     private readonly object gate = new();
+    private readonly Queue<string> stderrTail = new();
     private string modelDir;
     private string targetToken = "";
     private Process? worker;
@@ -24,16 +31,20 @@ public sealed class LocalTranslator : IDisposable
     private bool ready;
     private string status = "Not started";
 
-    public LocalTranslator(TranslationCache cache, string pluginDir, string? configuredModelDir)
+    public LocalTranslator(TranslationCache cache, string pluginDir, string configDir, string? configuredModelDir)
     {
         this.cache = cache;
         this.pluginDir = pluginDir;
-        modelDir = ResolveModelDir(pluginDir, configuredModelDir, Plugin.Configuration.TargetLanguage);
+        this.configDir = configDir;
+        modelDir = ResolveModelDir(pluginDir, configDir, configuredModelDir, Plugin.Configuration.TargetLanguage);
         targetToken = TargetLanguages.Get(Plugin.Configuration.TargetLanguage).TargetToken ?? "";
         workerScript = ResolveWorkerScript(pluginDir);
     }
 
-    private static string ResolveModelDir(string pluginDir, string? configured, string? language)
+    /// <summary>Where the in-game setup downloads packs: &lt;plugin config dir&gt;\Models.</summary>
+    public static string ModelRoot(string configDir) => Path.Combine(configDir, "Models");
+
+    private static string ResolveModelDir(string pluginDir, string configDir, string? configured, string? language)
     {
         if (!string.IsNullOrWhiteSpace(configured) && Directory.Exists(configured))
             return configured;
@@ -44,10 +55,9 @@ public sealed class LocalTranslator : IDisposable
 
         var candidates = new[]
         {
+            Path.Combine(ModelRoot(configDir), folder),
             Path.Combine(pluginDir, "Models", folder),
             Path.GetFullPath(Path.Combine(pluginDir, "..", "..", "..", "Models", folder)),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "XIVLauncher", "pluginConfigs", Brand.InternalName, "Models", folder),
         };
 
         foreach (var c in candidates)
@@ -103,9 +113,9 @@ public sealed class LocalTranslator : IDisposable
             if (!ModelPresent)
             {
                 var lang = TargetLanguages.Current();
-                status = string.IsNullOrEmpty(lang.Code) || lang.Code == TargetLanguages.CustomCode
-                    ? "Model missing — set a custom folder or run Models\\setup-models.ps1"
-                    : $"Model missing — run Models\\setup-models.ps1 -Language {lang.Code}";
+                status = lang.Code == TargetLanguages.CustomCode
+                    ? "Model missing — set a custom folder, or download a pack on the Setup tab"
+                    : $"Model missing — open Setup and download the {lang.Name} pack";
                 return;
             }
 
@@ -165,7 +175,7 @@ public sealed class LocalTranslator : IDisposable
         lock (gate)
         {
             KillWorker();
-            modelDir = ResolveModelDir(pluginDir, Plugin.Configuration.ModelDirectory, Plugin.Configuration.TargetLanguage);
+            modelDir = ResolveModelDir(pluginDir, configDir, Plugin.Configuration.ModelDirectory, Plugin.Configuration.TargetLanguage);
             targetToken = TargetLanguages.Get(Plugin.Configuration.TargetLanguage).TargetToken ?? "";
             ready = false;
             status = "Restarting…";
@@ -182,12 +192,19 @@ public sealed class LocalTranslator : IDisposable
     {
         KillWorker();
 
+        var python = TryFindPython()
+                     ?? throw new InvalidOperationException("Python not found. Install Python 3.10+ (tick 'Add to PATH'), then use the Setup tab.");
+        var args = new StringBuilder();
+        if (python == "py")
+            args.Append("-3 ");
+        args.Append('"').Append(workerScript).Append("\" \"").Append(modelDir).Append('"');
+        if (!string.IsNullOrWhiteSpace(targetToken))
+            args.Append(" \"").Append(targetToken).Append('"');
+
         var psi = new ProcessStartInfo
         {
-            FileName = FindPython(),
-            Arguments = string.IsNullOrWhiteSpace(targetToken)
-                ? $"\"{workerScript}\" \"{modelDir}\""
-                : $"\"{workerScript}\" \"{modelDir}\" \"{targetToken}\"",
+            FileName = python,
+            Arguments = args.ToString(),
             UseShellExecute = false,
             RedirectStandardInput = true,
             RedirectStandardOutput = true,
@@ -195,21 +212,51 @@ public sealed class LocalTranslator : IDisposable
             CreateNoWindow = true,
             StandardOutputEncoding = Encoding.UTF8,
             StandardInputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
         };
+        psi.Environment["PYTHONIOENCODING"] = "utf-8";
+        psi.Environment["PYTHONUTF8"] = "1";
 
         worker = Process.Start(psi) ?? throw new InvalidOperationException("Could not start Python.");
         stdin = worker.StandardInput;
         stdout = worker.StandardOutput;
 
-        worker.ErrorDataReceived += (_, _) => { };
+        lock (stderrTail)
+            stderrTail.Clear();
+        worker.ErrorDataReceived += (_, e) =>
+        {
+            if (string.IsNullOrWhiteSpace(e.Data))
+                return;
+            lock (stderrTail)
+            {
+                stderrTail.Enqueue(e.Data);
+                while (stderrTail.Count > 12)
+                    stderrTail.Dequeue();
+            }
+        };
         worker.BeginErrorReadLine();
 
         // Worker emits one ready {"ok":true,"pong":true} after model load.
-        var line = stdout.ReadLine() ?? string.Empty;
-        if (!line.Contains("\"ok\": true", StringComparison.OrdinalIgnoreCase) &&
-            !line.Contains("\"ok\":true", StringComparison.OrdinalIgnoreCase))
+        var readyTask = stdout.ReadLineAsync();
+        if (!readyTask.Wait(StartTimeout))
+            throw new TimeoutException($"worker did not become ready within {StartTimeout.TotalSeconds:0}s");
+
+        var line = readyTask.Result;
+        if (line is null)
+            throw new InvalidOperationException("worker exited: " + StderrSummary());
+
+        var reply = ParseReply(line);
+        if (!reply.Ok)
+            throw new InvalidOperationException(reply.Error ?? StderrSummary());
+    }
+
+    private string StderrSummary()
+    {
+        lock (stderrTail)
         {
-            throw new InvalidOperationException("Worker ready failed: " + line);
+            // Last real line of stderr is the Python exception; tracebacks are noise for the status line.
+            var last = stderrTail.LastOrDefault(l => !l.StartsWith(' ') && !l.StartsWith("Traceback", StringComparison.Ordinal));
+            return last ?? "no error output";
         }
     }
 
@@ -221,32 +268,34 @@ public sealed class LocalTranslator : IDisposable
             ready = true;
         }
 
-        var fast = Plugin.Configuration.FastTranslation ? "true" : "false";
-        var payload = "{\"cmd\":\"tr\",\"fast\":" + fast + ",\"text\":" + JsonEscape(english) + "}";
+        var payload = JsonSerializer.Serialize(new { cmd = "tr", fast = Plugin.Configuration.FastTranslation, text = english });
         stdin!.WriteLine(payload);
         stdin.Flush();
 
-        var line = stdout!.ReadLine();
-        if (line is null)
-            throw new InvalidOperationException("Worker closed.");
+        var line = stdout!.ReadLine()
+                   ?? throw new InvalidOperationException("worker closed: " + StderrSummary());
 
-        // {"ok":true,"t":"..."} — older workers used "ar"
-        foreach (var marker in new[] { "\"t\":", "\"ar\":" })
+        var reply = ParseReply(line);
+        if (!reply.Ok)
+            throw new InvalidOperationException(reply.Error ?? "worker error");
+        return string.IsNullOrEmpty(reply.Text) ? english : reply.Text;
+    }
+
+    private static (bool Ok, string? Text, string? Error) ParseReply(string line)
+    {
+        try
         {
-            var idx = line.IndexOf(marker, StringComparison.Ordinal);
-            if (idx < 0)
-                continue;
-
-            var rest = line[(idx + marker.Length)..].Trim();
-            if (rest.StartsWith('"'))
-            {
-                var end = FindClosingQuote(rest, 1);
-                if (end > 1)
-                    return UnescapeJson(rest[1..end]);
-            }
+            using var doc = JsonDocument.Parse(line);
+            var root = doc.RootElement;
+            var ok = root.TryGetProperty("ok", out var okEl) && okEl.ValueKind == JsonValueKind.True;
+            var text = root.TryGetProperty("t", out var t) ? t.GetString() : null;
+            var error = root.TryGetProperty("error", out var e) ? e.GetString() : null;
+            return (ok, text, error);
         }
-
-        return english;
+        catch (JsonException)
+        {
+            return (false, null, "unexpected worker output: " + (line.Length > 200 ? line[..200] + "…" : line));
+        }
     }
 
     private void KillWorker()
@@ -265,7 +314,8 @@ public sealed class LocalTranslator : IDisposable
         ready = false;
     }
 
-    private static string FindPython()
+    /// <summary>"python" or "py" (Windows launcher) when a working Python 3 is on PATH, else null.</summary>
+    public static string? TryFindPython()
     {
         foreach (var name in new[] { "python", "py" })
         {
@@ -284,7 +334,7 @@ public sealed class LocalTranslator : IDisposable
                     continue;
                 p.WaitForExit(3000);
                 if (p.ExitCode == 0)
-                    return name == "py" ? "py" : name;
+                    return name;
             }
             catch
             {
@@ -292,63 +342,6 @@ public sealed class LocalTranslator : IDisposable
             }
         }
 
-        throw new InvalidOperationException("Python not found. Install Python 3 and re-run setup-models.ps1.");
+        return null;
     }
-
-    private static string JsonEscape(string s)
-    {
-        var sb = new StringBuilder("\"");
-        foreach (var ch in s)
-        {
-            switch (ch)
-            {
-                case '\\': sb.Append("\\\\"); break;
-                case '"': sb.Append("\\\""); break;
-                case '\n': sb.Append("\\n"); break;
-                case '\r': sb.Append("\\r"); break;
-                case '\t': sb.Append("\\t"); break;
-                default:
-                    if (ch < 32)
-                        sb.Append("\\u").Append(((int)ch).ToString("x4"));
-                    else
-                        sb.Append(ch);
-                    break;
-            }
-        }
-
-        sb.Append('"');
-        return sb.ToString();
-    }
-
-    private static int FindClosingQuote(string s, int start)
-    {
-        var esc = false;
-        for (var i = start; i < s.Length; i++)
-        {
-            var c = s[i];
-            if (esc)
-            {
-                esc = false;
-                continue;
-            }
-
-            if (c == '\\')
-            {
-                esc = true;
-                continue;
-            }
-
-            if (c == '"')
-                return i;
-        }
-
-        return -1;
-    }
-
-    private static string UnescapeJson(string s) =>
-        s.Replace("\\n", "\n", StringComparison.Ordinal)
-            .Replace("\\r", "\r", StringComparison.Ordinal)
-            .Replace("\\t", "\t", StringComparison.Ordinal)
-            .Replace("\\\"", "\"", StringComparison.Ordinal)
-            .Replace("\\\\", "\\", StringComparison.Ordinal);
 }

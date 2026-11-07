@@ -1,7 +1,9 @@
 using System;
+using System.IO;
 using System.Numerics;
 using Lisan.Services;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Colors;
 using Dalamud.Interface.Windowing;
 using Dalamud.Utility;
 
@@ -14,13 +16,22 @@ public sealed class ConfigWindow : Window
     private bool modelDirLoaded;
     private string customTokenEdit = string.Empty;
     private bool customFieldsLoaded;
+    private string customRepoEdit = string.Empty;
+    private bool selectSetupTab;
 
     public ConfigWindow(Plugin plugin)
         : base("Lisan###LisanConfig")
     {
         this.plugin = plugin;
-        Size = new Vector2(500, 620);
+        Size = new Vector2(520, 640);
         SizeCondition = ImGuiCond.FirstUseEver;
+    }
+
+    /// <summary>Open the window on the Setup tab (first run, missing pack).</summary>
+    public void ShowSetup()
+    {
+        selectSetupTab = true;
+        IsOpen = true;
     }
 
     public override void Draw()
@@ -44,6 +55,14 @@ public sealed class ConfigWindow : Window
 
         if (ImGui.BeginTabBar("LisanTabs"))
         {
+            var setupFlags = selectSetupTab ? ImGuiTabItemFlags.SetSelected : ImGuiTabItemFlags.None;
+            selectSetupTab = false;
+            if (ImGui.BeginTabItem("Setup", setupFlags))
+            {
+                DrawSetup(cfg);
+                ImGui.EndTabItem();
+            }
+
             if (ImGui.BeginTabItem("General"))
             {
                 DrawGeneral(cfg);
@@ -74,12 +93,116 @@ public sealed class ConfigWindow : Window
             Util.OpenLink(Brand.Site);
     }
 
-    private void DrawGeneral(Configuration cfg)
+    private void DrawSetup(Configuration cfg)
     {
-        Toggle("Enable plugin", () => cfg.Enabled, v => cfg.Enabled = v);
+        var lang = TargetLanguages.Current();
+        var setup = plugin.Setup;
+        var translator = plugin.Translator;
+        var isCustom = cfg.TargetLanguage == TargetLanguages.CustomCode;
+
+        ImGui.TextWrapped("Lisan translates on your PC. It needs Python 3.10+ and one language pack (about 300 MB, downloaded once from Hugging Face). Nothing else leaves your machine.");
         ImGui.Spacing();
 
-        ImGui.Text("Target language");
+        // 1. Python
+        var py = setup.Python;
+        if (py == "")
+        {
+            ImGui.Text("1. Python: checking…");
+        }
+        else if (py is null)
+        {
+            ImGui.TextColored(ImGuiColors.DalamudRed, "1. Python: not found on PATH");
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Get Python"))
+                Util.OpenLink("https://www.python.org/downloads/windows/");
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Recheck"))
+                setup.RecheckPython();
+            ImGui.TextDisabled("Install Python 3.10 or newer and tick \"Add python.exe to PATH\", then Recheck.");
+        }
+        else
+        {
+            ImGui.TextColored(ImGuiColors.HealerGreen, $"1. Python: found ({py})");
+        }
+
+        // 2. Pack
+        var packReady = translator.ModelPresent;
+        ImGui.TextColored(packReady ? ImGuiColors.HealerGreen : ImGuiColors.DalamudRed,
+            packReady ? $"2. {lang.Name} pack: ready" : $"2. {lang.Name} pack: missing");
+        ImGui.TextDisabled(translator.ModelDirectory);
+
+        // 3. Font
+        if (string.IsNullOrEmpty(lang.FontFile))
+        {
+            ImGui.TextDisabled("3. Overlay font: not needed for this language");
+        }
+        else
+        {
+            var fontOk = plugin.Overlay.FontPath is not null;
+            ImGui.TextColored(fontOk ? ImGuiColors.HealerGreen : ImGuiColors.DalamudRed,
+                fontOk ? $"3. Overlay font: ready ({lang.FontFile})" : $"3. Overlay font: missing ({lang.FontFile})");
+        }
+
+        ImGui.Spacing();
+        ImGui.Text("Language");
+        ImGui.SameLine();
+        DrawLanguageCombo(cfg);
+
+        if (isCustom)
+        {
+            ImGui.SetNextItemWidth(-1);
+            ImGui.InputTextWithHint("##setuprepo", "Hugging Face repo id, e.g. Helsinki-NLP/opus-mt-en-xx", ref customRepoEdit, 128);
+        }
+
+        var canRun = !setup.Running && !string.IsNullOrEmpty(py) && (!isCustom || customRepoEdit.Contains('/'));
+        ImGui.BeginDisabled(!canRun);
+        var label = isCustom ? "Download custom pack + Python packages" : $"Download {lang.Name} pack + Python packages";
+        if (ImGui.Button(label))
+        {
+            if (isCustom)
+            {
+                var repo = customRepoEdit.Trim();
+                // Worker resolves the configured folder once the download lands there.
+                cfg.ModelDirectory = Path.Combine(setup.ModelRoot, repo[(repo.LastIndexOf('/') + 1)..]);
+                modelDirEdit = cfg.ModelDirectory;
+                cfg.Save();
+                setup.Start(TargetLanguages.CustomCode, repo);
+            }
+            else
+            {
+                setup.Start(lang.Code);
+            }
+        }
+
+        ImGui.EndDisabled();
+        if (setup.Running)
+        {
+            ImGui.SameLine();
+            if (ImGui.Button("Cancel"))
+                setup.Cancel();
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Open models folder"))
+            setup.OpenModelFolder();
+
+        ImGui.TextWrapped("Status: " + setup.Status);
+        ImGui.TextDisabled("Translator: " + translator.Status);
+
+        if (ImGui.BeginChild("LisanSetupLog", new Vector2(0, 190), true))
+        {
+            foreach (var line in setup.Lines)
+                ImGui.TextUnformatted(line);
+            if (setup.Running)
+                ImGui.SetScrollHereY(1f);
+        }
+
+        ImGui.EndChild();
+        ImGui.TextDisabled("Packs live in the plugin config folder and survive plugin updates. Already have torch + transformers? The pip step is quick.");
+    }
+
+    private void DrawLanguageCombo(Configuration cfg)
+    {
         var labels = TargetLanguages.ComboLabels();
         var selected = TargetLanguages.ComboIndex(cfg.TargetLanguage);
         ImGui.SetNextItemWidth(-1);
@@ -89,12 +212,22 @@ public sealed class ConfigWindow : Window
             cfg.Save();
             plugin.ApplyLanguage();
         }
+    }
+
+    private void DrawGeneral(Configuration cfg)
+    {
+        Toggle("Enable plugin", () => cfg.Enabled, v => cfg.Enabled = v);
+        ImGui.Spacing();
+
+        ImGui.Text("Target language");
+        DrawLanguageCombo(cfg);
 
         var lang = TargetLanguages.Current();
         ImGui.TextDisabled($"Model: {lang.HuggingFaceRepo}");
         if (!string.IsNullOrEmpty(lang.TargetToken))
             ImGui.TextDisabled($"Target token: {lang.TargetToken}");
-        ImGui.TextDisabled($"Then run:  Models\\setup-models.ps1 -Language {lang.Code}");
+        if (!plugin.Translator.ModelPresent)
+            ImGui.TextColored(ImGuiColors.DalamudOrange, "Pack not downloaded yet — see the Setup tab.");
 
         if (cfg.TargetLanguage == TargetLanguages.CustomCode)
         {
@@ -255,8 +388,7 @@ public sealed class ConfigWindow : Window
         if (ImGui.Button("Test translate"))
             plugin.RunTestTranslation();
 
-        var setupLang = TargetLanguages.Current();
-        ImGui.TextDisabled($"First-time setup: run Models\\setup-models.ps1 -Language {setupLang.Code} then Apply language / reload.");
+        ImGui.TextDisabled("First-time setup lives on the Setup tab. After changing packs or folders, apply here.");
         if (ImGui.Button("Apply language / restart worker"))
             plugin.ApplyLanguage();
     }

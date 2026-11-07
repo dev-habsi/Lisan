@@ -22,6 +22,9 @@ public sealed class DialogueOverlay : Window, IDisposable
     private bool drawingChoices;
     private float builtFontPx = 26f;
 
+    /// <summary>Resolved overlay font file; null when the language needs one and it is missing.</summary>
+    public string? FontPath { get; private set; }
+
     public DialogueOverlay(Plugin plugin)
         : base("Lisan Overlay###LisanOverlay",
             ImGuiWindowFlags.NoTitleBar |
@@ -309,6 +312,7 @@ public sealed class DialogueOverlay : Window, IDisposable
         try
         {
             var lang = TargetLanguages.Current();
+            FontPath = null;
             if (string.IsNullOrWhiteSpace(lang.FontFile))
                 return;
 
@@ -316,13 +320,15 @@ public sealed class DialogueOverlay : Window, IDisposable
             var candidates = new[]
             {
                 Path.Combine(dir, "Fonts", lang.FontFile),
+                Path.Combine(plugin.Setup.FontDir, lang.FontFile),
                 Path.GetFullPath(Path.Combine(dir, "..", "..", "..", "Fonts", lang.FontFile)),
             };
 
             var fontPath = candidates.FirstOrDefault(File.Exists);
+            FontPath = fontPath;
             if (fontPath is null)
             {
-                Plugin.Log.Warning($"Overlay font missing: {lang.FontFile}. Run Models\\setup-models.ps1 -Language {lang.Code}");
+                Plugin.Log.Warning($"Overlay font missing: {lang.FontFile}. Download it on the Setup tab.");
                 return;
             }
 
