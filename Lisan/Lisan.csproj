@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
   <PropertyGroup>
-    <Version>0.6.0.0</Version>
+    <Version>1.0.0.0</Version>
     <AssemblyName>Lisan</AssemblyName>
     <RootNamespace>Lisan</RootNamespace>
     <InternalName>Lisan</InternalName>
     <Author>ALHABSI</Author>
     <Name>Lisan</Name>
     <Punchline>Hear Eorzea in your own tongue. Offline dialogue translation, made with love at habsi.net.</Punchline>
-    <Description>Lisan (لسان — tongue, language) listens to Talk, BattleTalk, cutscene subtitles, dialogue choices, and chat, then translates English locally with Helsinki-NLP Opus-MT on your PC. History, copy, optional Arabic TTS. No cloud translation. A small gift from habsi.net.</Description>
-    <RepoUrl>https://habsi.net</RepoUrl>
-    <Tags>translation;dialogue;offline;arabic;accessibility</Tags>
+    <Description>Lisan (لسان — tongue, language) listens to Talk, BattleTalk, cutscene subtitles, and dialogue choices, then translates English locally with Helsinki-NLP Opus-MT on your PC. History, copy, optional Arabic TTS. No cloud translation. A small gift from habsi.net.</Description>
+    <RepoUrl>https://github.com/dev-habsi/Lisan</RepoUrl>
+    <IconUrl>https://raw.githubusercontent.com/dev-habsi/Lisan/main/Lisan/images/icon.png</IconUrl>
+    <Tags>translation;dialogue;offline;arabic;japanese;chinese;accessibility;localization</Tags>
     <CategoryTags>ui;utility</CategoryTags>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -22,29 +23,12 @@
     <Content Include="Models\setup-models.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <!-- Arabic pack (skip rust/tf mirrors — only pytorch weights are used). -->
-    <Content Include="Models\opus-mt-en-ar\config.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Models\opus-mt-en-ar\generation_config.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Models\opus-mt-en-ar\tokenizer_config.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Models\opus-mt-en-ar\vocab.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Models\opus-mt-en-ar\source.spm">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Models\opus-mt-en-ar\target.spm">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Models\opus-mt-en-ar\pytorch_model.bin">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="Fonts\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>false</Visible>
+    </Content>
+    <!-- Plugin installer icon; DalamudPackager zips whatever is in the output folder. -->
+    <Content Include="images\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>
     </Content>

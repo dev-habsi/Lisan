@@ -1,0 +1,72 @@
+name: Release
+
+# Tag v1.2.3 (matching <Version> in Lisan.csproj) -> GitHub release with latest.zip
+# -> pluginmaster.json on main updated so Dalamud custom-repo users get the update.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Check tag matches csproj version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}".TrimStart("v")
+          $ver = ([xml](Get-Content Lisan/Lisan.csproj)).Project.PropertyGroup.Version
+          if (-not $ver.StartsWith($tag)) { throw "Tag $tag does not match <Version>$ver</Version> in Lisan.csproj" }
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Download Dalamud
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile dalamud.zip
+          Expand-Archive -Force dalamud.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
+
+      - name: Build
+        run: dotnet build Lisan/Lisan.csproj -c Release -p:Platform=x64
+
+      - name: Write pluginmaster.json
+        shell: pwsh
+        run: |
+          $m = Get-Content Lisan/bin/x64/Release/Lisan/Lisan.json -Raw | ConvertFrom-Json
+          $zip = "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/latest.zip"
+          $m | Add-Member -NotePropertyName DownloadLinkInstall -NotePropertyValue $zip -Force
+          $m | Add-Member -NotePropertyName DownloadLinkTesting -NotePropertyValue $zip -Force
+          $m | Add-Member -NotePropertyName DownloadLinkUpdate  -NotePropertyValue $zip -Force
+          $m | Add-Member -NotePropertyName LastUpdate -NotePropertyValue ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()) -Force
+          $m | Add-Member -NotePropertyName DownloadCount -NotePropertyValue 0 -Force
+          $m | Add-Member -NotePropertyName IsHide -NotePropertyValue $false -Force
+          $m | Add-Member -NotePropertyName IsTestingExclusive -NotePropertyValue $false -Force
+          $json = ConvertTo-Json -InputObject @($m) -AsArray -Depth 10
+          [System.IO.File]::WriteAllText("pluginmaster.json", $json + "`n", [System.Text.UTF8Encoding]::new($false))
+          Get-Content pluginmaster.json
+
+      - name: GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            Lisan/bin/x64/Release/Lisan/latest.zip
+            Lisan/bin/x64/Release/Lisan/Lisan.json
+          generate_release_notes: true
+
+      - name: Commit pluginmaster.json
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pluginmaster.json
+          git commit -m "pluginmaster: ${{ github.ref_name }}" ; if ($LASTEXITCODE -ne 0) { "nothing to commit"; exit 0 }
+          git push origin HEAD:main
