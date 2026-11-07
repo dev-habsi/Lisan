@@ -1,42 +1,40 @@
 [
-  [
-    {
-      "Author": "ALHABSI",
-      "Name": "Lisan",
-      "InternalName": "Lisan",
-      "AssemblyVersion": "1.0.0.0",
-      "Description": "Lisan (لسان — tongue, language) listens to Talk, BattleTalk, cutscene subtitles, and dialogue choices, then translates English locally with Helsinki-NLP Opus-MT on your PC. History, copy, optional Arabic TTS. No cloud translation. A small gift from habsi.net.",
-      "ApplicableVersion": "any",
-      "RepoUrl": "https://github.com/dev-habsi/Lisan",
-      "Tags": [
-        "translation",
-        "dialogue",
-        "offline",
-        "arabic",
-        "japanese",
-        "chinese",
-        "accessibility",
-        "localization"
-      ],
-      "CategoryTags": [
-        "ui",
-        "utility"
-      ],
-      "DalamudApiLevel": 15,
-      "LoadRequiredState": 0,
-      "LoadSync": false,
-      "CanUnloadAsync": false,
-      "LoadPriority": 0,
-      "IconUrl": "https://raw.githubusercontent.com/dev-habsi/Lisan/main/Lisan/images/icon.png",
-      "Punchline": "Hear Eorzea in your own tongue. Offline dialogue translation, made with love at habsi.net.",
-      "AcceptsFeedback": true,
-      "DownloadLinkInstall": "https://github.com/dev-habsi/Lisan/releases/download/v1.0.0/latest.zip",
-      "DownloadLinkTesting": "https://github.com/dev-habsi/Lisan/releases/download/v1.0.0/latest.zip",
-      "DownloadLinkUpdate": "https://github.com/dev-habsi/Lisan/releases/download/v1.0.0/latest.zip",
-      "LastUpdate": 1794077046,
-      "DownloadCount": 0,
-      "IsHide": false,
-      "IsTestingExclusive": false
-    }
-  ]
+  {
+    "Author": "ALHABSI",
+    "Name": "Lisan",
+    "InternalName": "Lisan",
+    "AssemblyVersion": "1.0.0.0",
+    "Description": "Lisan (لسان — tongue, language) listens to Talk, BattleTalk, cutscene subtitles, and dialogue choices, then translates English locally with Helsinki-NLP Opus-MT on your PC. History, copy, optional Arabic TTS. No cloud translation. A small gift from habsi.net.",
+    "ApplicableVersion": "any",
+    "RepoUrl": "https://github.com/dev-habsi/Lisan",
+    "Tags": [
+      "translation",
+      "dialogue",
+      "offline",
+      "arabic",
+      "japanese",
+      "chinese",
+      "accessibility",
+      "localization"
+    ],
+    "CategoryTags": [
+      "ui",
+      "utility"
+    ],
+    "DalamudApiLevel": 15,
+    "LoadRequiredState": 0,
+    "LoadSync": false,
+    "CanUnloadAsync": false,
+    "LoadPriority": 0,
+    "IconUrl": "https://raw.githubusercontent.com/dev-habsi/Lisan/main/Lisan/images/icon.png",
+    "Punchline": "Hear Eorzea in your own tongue. Offline dialogue translation, made with love at habsi.net.",
+    "AcceptsFeedback": true,
+    "DownloadLinkInstall": "https://github.com/dev-habsi/Lisan/releases/download/v1.0.0/latest.zip",
+    "DownloadLinkTesting": "https://github.com/dev-habsi/Lisan/releases/download/v1.0.0/latest.zip",
+    "DownloadLinkUpdate": "https://github.com/dev-habsi/Lisan/releases/download/v1.0.0/latest.zip",
+    "LastUpdate": 1794077046,
+    "DownloadCount": 0,
+    "IsHide": false,
+    "IsTestingExclusive": false
+  }
 ]
