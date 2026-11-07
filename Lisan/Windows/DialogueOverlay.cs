@@ -162,7 +162,10 @@ public sealed class DialogueOverlay : Window, IDisposable
         ImGui.SetWindowFontScale(scale);
 
         var maxChars = DialogueDisplay.EstimateMaxChars(wrapW, fontPx);
-        var textCol = cfg.BalloonTextColor;
+        // Talk and BattleTalk sit on the light parchment bubble. Dark panels keep the configured color.
+        var textCol = line.Source is "Talk" or "BattleTalk"
+            ? new Vector4(0f, 0f, 0f, 1f)
+            : cfg.BalloonTextColor;
         if (line.Busy)
             textCol = new Vector4(textCol.X * 0.72f, textCol.Y * 0.72f, textCol.Z * 0.72f, textCol.W * 0.88f);
 
