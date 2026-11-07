@@ -1,0 +1,21 @@
+name: Bug report
+description: Something does not work
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes: {label: Lisan version, placeholder: "1.0.0"}
+    validations: {required: true}
+  - type: input
+    id: language
+    attributes: {label: Target language, placeholder: "ar"}
+  - type: textarea
+    id: what
+    attributes: {label: What happened and what did you expect?}
+    validations: {required: true}
+  - type: textarea
+    id: log
+    attributes:
+      label: Log lines
+      description: Setup tab log, or /xllog output. Enable "Log each translation" on the Debug tab first.
+      render: text

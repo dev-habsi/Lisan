@@ -4,6 +4,8 @@
 
 # Lisan
 
+[![Build](https://github.com/dev-habsi/Lisan/actions/workflows/build.yml/badge.svg)](https://github.com/dev-habsi/Lisan/actions/workflows/build.yml) [![Release](https://img.shields.io/github/v/release/dev-habsi/Lisan)](https://github.com/dev-habsi/Lisan/releases/latest) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) ![Dalamud API 15](https://img.shields.io/badge/Dalamud-API%2015-purple) ![Offline](https://img.shields.io/badge/translation-100%25%20offline-green)
+
 **Lisan** (لسان: tongue, language) is a [Dalamud](https://github.com/goatcorp/Dalamud) plugin for Final Fantasy XIV that translates NPC dialogue from English into your language, **offline, on your own PC**. Talk balloons, battle talk, cutscene subtitles, dialogue choices and Yes/No prompts are rewritten in place. Default language is Arabic; 26 languages are built in and any Hugging Face Opus-MT model can be used.
 
 Made with love at [habsi.net](https://habsi.net).
