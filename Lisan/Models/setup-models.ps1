@@ -126,6 +126,7 @@ if ($weightsPresent -and -not $Force) {
     New-Item -ItemType Directory -Force -Path $ModelDir | Out-Null
     $env:LISAN_MODEL = $ModelDir
     $env:LISAN_REPO = $pack.Repo
+    $env:HF_HUB_VERBOSITY = "error"  # hide the unauthenticated-requests warning
     # Only tokenizer + one set of weights: skips the rust/tf mirrors (hundreds of MB each).
     $dl = @'
 import os
@@ -149,7 +150,8 @@ print("OK", r, "->", d)
 New-Item -ItemType Directory -Force -Path $FontDir | Out-Null
 if ($pack.FontFile -and $pack.FontUrl) {
     $FontPath = Join-Path $FontDir $pack.FontFile
-    if (-not (Test-Path $FontPath)) {
+    $Bundled = Join-Path (Join-Path (Split-Path -Parent $Root) "Fonts") $pack.FontFile
+    if (-not (Test-Path $FontPath) -and -not (Test-Path $Bundled)) {
         Write-Host "[3/3] Download overlay font $($pack.FontFile)..."
         try {
             Invoke-WebRequest -Uri $pack.FontUrl -OutFile $FontPath -UseBasicParsing -ErrorAction Stop
