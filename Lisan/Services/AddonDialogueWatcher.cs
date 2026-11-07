@@ -392,10 +392,6 @@ public sealed class AddonDialogueWatcher : IDisposable
         if (list is null)
             return found;
 
-        var gs = ImGuiHelpers.GlobalScale;
-        if (gs < 0.01f)
-            gs = 1f;
-
         for (var i = 0; i < count; i++)
         {
             var node = list[i];
@@ -412,14 +408,17 @@ public sealed class AddonDialogueWatcher : IDisposable
                 continue;
 
             var scale = GetNodeScale((AtkResNode*)tn);
+            // ScreenX/Y and scaled Width/Height are already pixels. Dalamud only
+            // multiplies Window.Size by GlobalScale — dividing here shifts the
+            // overlay toward the origin (onto whatever UI is behind the dialog).
             found.Add(new ScannedChoice
             {
                 NodeId = tn->NodeId,
                 English = text.Trim(),
-                Pos = new Vector2(tn->ScreenX, tn->ScreenY) / gs,
+                Pos = new Vector2(tn->ScreenX, tn->ScreenY),
                 Size = new Vector2(
                     Math.Max(48f, tn->Width * scale.X),
-                    Math.Max(20f, tn->Height * scale.Y)) / gs,
+                    Math.Max(20f, tn->Height * scale.Y)),
             });
         }
 

@@ -244,13 +244,17 @@ public sealed class DialogueOverlay : Window, IDisposable
             if (choice.Busy)
                 textCol = new Vector4(textCol.X * 0.72f, textCol.Y * 0.72f, textCol.Z * 0.72f, textCol.W * 0.88f);
 
-            ImGui.SetCursorScreenPos(choice.Pos);
+            // Same space as Window.Position: game pixels plus the main viewport origin.
+            var pos = choice.Pos + ImGuiHelpers.MainViewport.Pos;
+            ImGui.PushClipRect(pos, pos + new Vector2(wrapW, Math.Max(20f, choice.Size.Y)), true);
+            ImGui.SetCursorScreenPos(pos);
 
             if (!lang.RightToLeft)
             {
                 ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + wrapW);
                 DrawClearText(textCol, choice.Translation);
                 ImGui.PopTextWrapPos();
+                ImGui.PopClipRect();
                 return;
             }
 
@@ -269,6 +273,7 @@ public sealed class DialogueOverlay : Window, IDisposable
             }
 
             ImGui.PopStyleVar();
+            ImGui.PopClipRect();
         }
 
         if (overlayFont is not null)

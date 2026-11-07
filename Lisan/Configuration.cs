@@ -7,7 +7,7 @@ namespace Lisan;
 [Serializable]
 public class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 15;
+    public int Version { get; set; } = 16;
 
     /// <summary>ISO-ish code from <see cref="TargetLanguages"/>, or "custom". Default Arabic (existing installs).</summary>
     public string TargetLanguage { get; set; } = "ar";
@@ -24,9 +24,9 @@ public class Configuration : IPluginConfiguration
 
     /// <summary>Plugin-font balloon size in pixels (Arabic, CJK, …).</summary>
     public float BalloonFontSize { get; set; } = 26f;
-    public float BalloonTextR { get; set; } = 0f;
-    public float BalloonTextG { get; set; } = 0f;
-    public float BalloonTextB { get; set; } = 0f;
+    public float BalloonTextR { get; set; } = 1f;
+    public float BalloonTextG { get; set; } = 1f;
+    public float BalloonTextB { get; set; } = 1f;
     public float BalloonTextA { get; set; } = 1f;
 
     public Vector4 BalloonTextColor
@@ -136,6 +136,21 @@ public class Configuration : IPluginConfiguration
             if (BalloonFontSize >= 29f)
                 BalloonFontSize = 26f;
             Version = 15;
+        }
+
+        // Black ink disappears on the dark Yes/No panel and Talk balloon.
+        if (Version < 16)
+        {
+            var lum = (0.2126f * BalloonTextR) + (0.7152f * BalloonTextG) + (0.0722f * BalloonTextB);
+            if (lum < 0.25f)
+            {
+                BalloonTextR = 1f;
+                BalloonTextG = 1f;
+                BalloonTextB = 1f;
+                BalloonTextA = 1f;
+            }
+
+            Version = 16;
             Save();
         }
     }
