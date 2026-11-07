@@ -4,7 +4,7 @@
     "Name": "Lisan",
     "InternalName": "Lisan",
     "AssemblyVersion": "1.0.0.0",
-    "Description": "Lisan (لسان — tongue, language) listens to Talk, BattleTalk, cutscene subtitles, and dialogue choices, then translates English locally with Helsinki-NLP Opus-MT on your PC. History, copy, optional Arabic TTS. No cloud translation. A small gift from habsi.net.",
+    "Description": "Lisan (Arabic for tongue or language) listens to Talk, BattleTalk, cutscene subtitles, and dialogue choices, then translates English locally with Helsinki-NLP Opus-MT on your PC. History, copy, optional Arabic TTS. No cloud translation. A small gift from habsi.net.",
     "ApplicableVersion": "any",
     "RepoUrl": "https://github.com/dev-habsi/Lisan",
     "Tags": [

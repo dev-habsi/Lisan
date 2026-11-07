@@ -8,7 +8,7 @@
     <Author>ALHABSI</Author>
     <Name>Lisan</Name>
     <Punchline>Hear Eorzea in your own tongue. Offline dialogue translation, made with love at habsi.net.</Punchline>
-    <Description>Lisan (لسان — tongue, language) listens to Talk, BattleTalk, cutscene subtitles, and dialogue choices, then translates English locally with Helsinki-NLP Opus-MT on your PC. History, copy, optional Arabic TTS. No cloud translation. A small gift from habsi.net.</Description>
+    <Description>Lisan (Arabic for tongue or language) listens to Talk, BattleTalk, cutscene subtitles, and dialogue choices, then translates English locally with Helsinki-NLP Opus-MT on your PC. History, copy, optional Arabic TTS. No cloud translation. A small gift from habsi.net.</Description>
     <RepoUrl>https://github.com/dev-habsi/Lisan</RepoUrl>
     <IconUrl>https://raw.githubusercontent.com/dev-habsi/Lisan/main/Lisan/images/icon.png</IconUrl>
     <Tags>translation;dialogue;offline;arabic;japanese;chinese;accessibility;localization</Tags>
