@@ -5,3 +5,13 @@ bin/
 *.suo
 .idea/
 *.DotSettings.user
+
+# Language packs are downloaded at runtime (Hugging Face), never committed.
+Lisan/Models/*/
+__pycache__/
+*.pyc
+
+# Only the bundled Arabic font + its license live in git; other fonts are downloaded by setup.
+Lisan/Fonts/*
+!Lisan/Fonts/NotoNaskhArabic-Regular.ttf
+!Lisan/Fonts/OFL.txt
