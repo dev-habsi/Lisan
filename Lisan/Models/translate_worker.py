@@ -11,6 +11,12 @@ import re
 import sys
 import os
 
+# Keep stderr for real errors: the plugin shows its last line when the worker fails.
+os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
+os.environ.setdefault("TRANSFORMERS_NO_ADVISORY_WARNINGS", "1")
+os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
+
 # Marian opus-mt max_position_embeddings = 512. Leave headroom for special tokens.
 MAX_TOKENS = 480
 MAX_NEW_CAP = 256  # dialogue lines rarely need more; smaller = faster generate

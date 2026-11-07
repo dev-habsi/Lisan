@@ -51,25 +51,6 @@ function Get-PythonExe {
     return $null
 }
 
-function Test-ModelPresent([string]$code) {
-    $known = @{
-        ar = "opus-mt-en-ar"; de = "opus-mt-en-de"; es = "opus-mt-en-es"
-        it = "opus-mt-en-it"; pt = "opus-mt-tc-big-en-pt"; nl = "opus-mt-en-nl"; pl = "opus-mt-en-pl"
-        ru = "opus-mt-en-ru"; uk = "opus-mt-en-uk"; tr = "opus-mt-en-tr"; sv = "opus-mt-en-sv"
-        da = "opus-mt-en-da"; fi = "opus-mt-en-fi"; cs = "opus-mt-en-cs"; ro = "opus-mt-en-ro"
-        hu = "opus-mt-en-hu"; el = "opus-mt-en-el"; bg = "opus-mt-en-bg"; ja = "opus-mt-en-jap"
-        zh = "opus-mt-en-zh"; ko = "opus-mt-tc-big-en-ko"; vi = "opus-mt-en-vi"; id = "opus-mt-en-id"
-        fa = "opus-mt-en-fa"; hi = "opus-mt-en-hi"; th = "opus-mt-en-th"
-    }
-    $folder = $known[$code]
-    if (-not $folder) { $folder = "opus-mt-en-$code" }
-    $dir = Join-Path $Models $folder
-    $cfg = Join-Path $dir "config.json"
-    $bin = Join-Path $dir "pytorch_model.bin"
-    $safe = Join-Path $dir "model.safetensors"
-    return (Test-Path $cfg) -and ((Test-Path $bin) -or (Test-Path $safe))
-}
-
 Write-Host "=== Lisan installer ===" -ForegroundColor Green
 Write-Host "Repo     : $RepoRoot"
 Write-Host "Language : $Language"
@@ -105,24 +86,14 @@ if (-not (Test-Path (Join-Path $Proj "Lisan.csproj"))) {
 }
 
 # 2. Model + Python packages
-$needModel = $ForceModel -or (-not $SkipModel -and -not (Test-ModelPresent $Language))
 if ($SkipModel) {
     Write-Step "Skip model download"
-} elseif (-not $needModel) {
-    Write-Step "Model already on disk; skip download (use -ForceModel to redo)"
-    Write-Host "Checking Python packages (torch / transformers)..."
-    & $python -c 'import transformers, torch; print("packages ok")'
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Packages missing; running setup-models.ps1 for pip + model"
-        $needModel = $true
-    }
-}
-
-if ($needModel) {
-    Write-Step "Download model + font (internet once)"
+} else {
+    Write-Step "Python packages + model + font (setup-models.ps1 skips packs already on disk)"
     $setup = Join-Path $Models "setup-models.ps1"
     $setupArgs = @{ Language = $Language }
     if (-not [string]::IsNullOrWhiteSpace($Repo)) { $setupArgs.Repo = $Repo }
+    if ($ForceModel) { $setupArgs.Force = $true }
     & $setup @setupArgs
     if ($LASTEXITCODE -ne 0) { Fail "setup-models.ps1 failed" }
 }

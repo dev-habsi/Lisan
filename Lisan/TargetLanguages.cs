@@ -4,7 +4,7 @@ namespace Lisan;
 
 /// <summary>
 /// Built-in English→X language packs (Helsinki-NLP Opus-MT on disk).
-/// Pick one in config, then run Models\setup-models.ps1 -Language &lt;code&gt;.
+/// Pick one in config, then download it on the Setup tab (or run Models\setup-models.ps1 -Language &lt;code&gt;).
 /// </summary>
 public sealed class TargetLanguageInfo
 {
@@ -91,13 +91,13 @@ public static class TargetLanguages
             busy: "Traduzindo…", token: ">>por<<"),
         Lang("nl", "Dutch", "Helsinki-NLP/opus-mt-en-nl", "opus-mt-en-nl",
             busy: "Vertalen…"),
-        Lang("pl", "Polish", "Helsinki-NLP/opus-mt-en-pl", "opus-mt-en-pl",
-            busy: "Tłumaczenie…"),
+        Lang("pl", "Polish", "Helsinki-NLP/opus-mt-en-sla", "opus-mt-en-sla",
+            busy: "Tłumaczenie…", token: ">>pol<<"),
         Lang("ru", "Russian", "Helsinki-NLP/opus-mt-en-ru", "opus-mt-en-ru",
             busy: "Перевод…"),
         Lang("uk", "Ukrainian", "Helsinki-NLP/opus-mt-en-uk", "opus-mt-en-uk",
             busy: "Переклад…"),
-        Lang("tr", "Turkish", "Helsinki-NLP/opus-mt-en-tr", "opus-mt-en-tr",
+        Lang("tr", "Turkish", "Helsinki-NLP/opus-mt-tc-big-en-tr", "opus-mt-tc-big-en-tr",
             busy: "Çeviriliyor…"),
         Lang("sv", "Swedish", "Helsinki-NLP/opus-mt-en-sv", "opus-mt-en-sv",
             busy: "Översätter…"),
@@ -127,14 +127,14 @@ public static class TargetLanguages
             busy: "Đang dịch…"),
         Lang("id", "Indonesian", "Helsinki-NLP/opus-mt-en-id", "opus-mt-en-id",
             busy: "Menerjemahkan…"),
-        Lang("fa", "Persian", "Helsinki-NLP/opus-mt-en-fa", "opus-mt-en-fa",
-            rtl: true, arabic: true, busy: "در حال ترجمه…",
+        Lang("fa", "Persian", "Helsinki-NLP/opus-mt-en-mul", "opus-mt-en-mul",
+            rtl: true, arabic: true, busy: "در حال ترجمه…", token: ">>pes<<",
             font: "NotoNaskhArabic-Regular.ttf", glyphs: ArabicGlyphs),
         Lang("hi", "Hindi", "Helsinki-NLP/opus-mt-en-hi", "opus-mt-en-hi",
             busy: "अनुवाद हो रहा है…",
             font: "NotoSansDevanagari-Regular.ttf", glyphs: DevanagariGlyphs),
-        Lang("th", "Thai", "Helsinki-NLP/opus-mt-en-th", "opus-mt-en-th",
-            busy: "กำลังแปล…",
+        Lang("th", "Thai", "Helsinki-NLP/opus-mt-en-mul", "opus-mt-en-mul",
+            busy: "กำลังแปล…", token: ">>tha<<",
             font: "NotoSansThai-Regular.ttf", glyphs: ThaiGlyphs),
     ];
 
