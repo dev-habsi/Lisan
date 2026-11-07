@@ -297,7 +297,7 @@ public sealed class ConfigWindow : Window
             plugin.Overlay.ReloadFont();
         }
 
-        ImGui.TextDisabled("Talk balloon is black. This color is for subtitles and Yes/No. Arabic / CJK use the plugin font.");
+        ImGui.TextDisabled("Text color applies to subtitles, Yes/No and plugin-font languages (Arabic / CJK). Game balloons keep their own color.");
     }
 
     private void DrawTranslator(Configuration cfg)

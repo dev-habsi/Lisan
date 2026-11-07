@@ -911,11 +911,7 @@ public sealed class AddonDialogueWatcher : IDisposable
         if (styleBalloon)
         {
             var cfg = Plugin.Configuration;
-            var col = cfg.BalloonTextColor;
-            node->TextColor.R = (byte)Math.Clamp((int)(col.X * 255f), 0, 255);
-            node->TextColor.G = (byte)Math.Clamp((int)(col.Y * 255f), 0, 255);
-            node->TextColor.B = (byte)Math.Clamp((int)(col.Z * 255f), 0, 255);
-            node->TextColor.A = (byte)Math.Clamp((int)(col.W * 255f), 0, 255);
+            // Keep the game's own text color: balloon themes differ (dark or cream), a fixed color is unreadable on one of them.
             node->FontSize = (byte)Math.Clamp(cfg.BalloonFontSize * 0.55f, 12f, 28f);
         }
 
