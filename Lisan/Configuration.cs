@@ -21,8 +21,6 @@ public class Configuration : IPluginConfiguration
     public bool TranslateTalkSubtitle { get; set; } = true;
     public bool TranslateChoices { get; set; } = true;
     public bool TranslateYesNo { get; set; } = true;
-    /// <summary>The pink item/action help line above the hotbar.</summary>
-    public bool TranslateTooltips { get; set; } = true;
 
     /// <summary>Plugin-font balloon size in pixels (Arabic, CJK, …).</summary>
     public float BalloonFontSize { get; set; } = 26f;
@@ -153,13 +151,6 @@ public class Configuration : IPluginConfiguration
             }
 
             Version = 16;
-        }
-
-        if (Version < 17)
-        {
-            TranslateTooltips = true;
-            Version = 17;
-            Save();
         }
     }
 }
