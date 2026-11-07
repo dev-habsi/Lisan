@@ -243,7 +243,14 @@ public sealed class DialogueOverlay : Window, IDisposable
                 return;
 
             var wrapW = Math.Max(48f, choice.Size.X);
-            var textCol = cfg.BalloonTextColor;
+            // Help text is the pink line above the hotbar. Other choices sit on dark panels.
+            var textCol = choice.HelpLine
+                ? new Vector4(1f, 180f / 255f, 210f / 255f, 1f)
+                : cfg.BalloonTextColor;
+            var fontPx = choice.HelpLine
+                ? Math.Clamp(choice.Size.Y * 0.72f, 15f, 22f)
+                : Math.Clamp(cfg.BalloonFontSize, 16f, 42f);
+            ImGui.SetWindowFontScale(fontPx / Math.Max(8f, builtFontPx));
             if (choice.Busy)
                 textCol = new Vector4(textCol.X * 0.72f, textCol.Y * 0.72f, textCol.Z * 0.72f, textCol.W * 0.88f);
 

@@ -31,6 +31,7 @@ public sealed class DialogueChoice
     public string English { get; init; } = string.Empty;
     public string Translation { get; init; } = string.Empty;
     public bool Busy { get; init; }
+    public bool HelpLine { get; init; }
     public Vector2 Pos { get; init; }
     public Vector2 Size { get; init; }
 }
@@ -109,6 +110,10 @@ public sealed class AddonDialogueWatcher : IDisposable
         Plugin.AddonLifecycle.RegisterListener(AddonEvent.PostDraw, "SelectYesno", OnSelectYesNo);
         Plugin.AddonLifecycle.RegisterListener(AddonEvent.PostRefresh, "SelectYesno", OnSelectYesNo);
         Plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "SelectYesno", OnSelectYesNoClosed);
+
+        Plugin.AddonLifecycle.RegisterListener(AddonEvent.PostDraw, "Tooltip", OnTooltip);
+        Plugin.AddonLifecycle.RegisterListener(AddonEvent.PostRefresh, "Tooltip", OnTooltip);
+        Plugin.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, "Tooltip", OnTooltipClosed);
     }
 
     public void Dispose()
@@ -127,6 +132,8 @@ public sealed class AddonDialogueWatcher : IDisposable
         Plugin.AddonLifecycle.UnregisterListener(OnCutSceneSelectStringClosed);
         Plugin.AddonLifecycle.UnregisterListener(OnSelectYesNo);
         Plugin.AddonLifecycle.UnregisterListener(OnSelectYesNoClosed);
+        Plugin.AddonLifecycle.UnregisterListener(OnTooltip);
+        Plugin.AddonLifecycle.UnregisterListener(OnTooltipClosed);
         foreach (var pin in textPins.Values)
         {
             if (pin.IsAllocated)
@@ -201,6 +208,12 @@ public sealed class AddonDialogueWatcher : IDisposable
     private void OnCutSceneSelectString(AddonEvent type, AddonArgs args) => TranslateChoiceAddon("CutSceneSelectString");
     private void OnSelectYesNo(AddonEvent type, AddonArgs args) => TranslateChoiceAddon("SelectYesno");
     private void OnSelectYesNoClosed(AddonEvent type, AddonArgs args) => ClearChoices();
+    private void OnTooltip(AddonEvent type, AddonArgs args) => TranslateChoiceAddon("Tooltip");
+    private void OnTooltipClosed(AddonEvent type, AddonArgs args)
+    {
+        if (choiceAddon == "Tooltip")
+            ClearChoices();
+    }
 
     private void OnTalk(AddonEvent type, AddonArgs args)
     {
@@ -228,9 +241,12 @@ public sealed class AddonDialogueWatcher : IDisposable
 
     private void TranslateChoiceAddon(string addonName)
     {
-        var allowed = addonName == "SelectYesno"
-            ? Plugin.Configuration.TranslateYesNo
-            : Plugin.Configuration.TranslateChoices;
+        var allowed = addonName switch
+        {
+            "SelectYesno" => Plugin.Configuration.TranslateYesNo,
+            "Tooltip" => Plugin.Configuration.TranslateTooltips,
+            _ => Plugin.Configuration.TranslateChoices,
+        };
         if (!Plugin.Configuration.Enabled || !allowed)
             return;
 
@@ -262,7 +278,15 @@ public sealed class AddonDialogueWatcher : IDisposable
                 else if (ContainsArabic(english))
                     english = orig;
                 else if (english != orig && !SameLoose(english, orig))
+                {
                     choiceOriginal[key] = english;
+                    // The help line reuses one node for every hover, so the old translation cannot stay.
+                    if (addonName == "Tooltip")
+                    {
+                        choiceTranslated.Remove(key);
+                        choiceInflight.Remove(key);
+                    }
+                }
             }
             else if (ContainsArabic(english))
             {
@@ -279,7 +303,8 @@ public sealed class AddonDialogueWatcher : IDisposable
             {
                 translation = cached;
                 choiceTranslated[key] = cached;
-                RecordChoice(addonName, english, cached);
+                if (addonName != "Tooltip")
+                    RecordChoice(addonName, english, cached);
             }
             else if (choiceTranslated.TryGetValue(key, out var done))
             {
@@ -304,6 +329,7 @@ public sealed class AddonDialogueWatcher : IDisposable
                 English = english,
                 Translation = translation,
                 Busy = isBusy,
+                HelpLine = addonName == "Tooltip",
                 Pos = row.Pos,
                 Size = row.Size,
             });
@@ -338,7 +364,8 @@ public sealed class AddonDialogueWatcher : IDisposable
                 if (string.IsNullOrWhiteSpace(translated))
                     translated = captured;
                 choiceTranslated[key] = translated;
-                RecordChoice(capturedAddon, captured, translated);
+                if (!key.StartsWith("Tooltip:", StringComparison.Ordinal))
+                    RecordChoice(capturedAddon, captured, translated);
                 if (Plugin.Configuration.LogTranslations)
                     Plugin.Log.Information($"[{capturedAddon} #{capturedNode}] {captured} => {translated}");
             });

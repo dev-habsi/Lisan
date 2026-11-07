@@ -124,6 +124,7 @@ public sealed class ConfigWindow : Window
         Toggle("TalkSubtitle (cutscenes)", () => cfg.TranslateTalkSubtitle, v => cfg.TranslateTalkSubtitle = v);
         Toggle("Dialogue choices", () => cfg.TranslateChoices, v => cfg.TranslateChoices = v);
         Toggle("Yes / No prompts", () => cfg.TranslateYesNo, v => cfg.TranslateYesNo = v);
+        Toggle("Item help text", () => cfg.TranslateTooltips, v => cfg.TranslateTooltips = v);
         ImGui.TextDisabled("Translation is written onto the game balloon. Scripts the game font cannot draw (Arabic, CJK, …) use a plugin font on the same balloon.");
 
         ImGui.Spacing();
