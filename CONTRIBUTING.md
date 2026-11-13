@@ -6,20 +6,13 @@ Thanks for helping. Issues and pull requests are welcome at https://github.com/d
 
 Requirements: Windows, .NET 10 SDK, XIVLauncher with Dalamud installed and launched at least once (the SDK references `%AppData%\XIVLauncher\addon\Hooks\dev`), Python 3.10+ on PATH.
 
-```powershell
-git clone https://github.com/dev-habsi/Lisan.git
-cd Lisan
-.\Install-Lisan.ps1          # pip packages + Arabic pack + Release build + Dev Plugin registration
 ```
-
-Or by hand:
-
-```powershell
-cd Lisan
+git clone https://github.com/dev-habsi/Lisan.git
+cd Lisan/Lisan
 dotnet build -c Release -p:Platform=x64
 ```
 
-Output: `Lisan\bin\x64\Release\` (add it as a Dev Plugin in Dalamud Settings → Experimental). The release zip and manifest are in `Lisan\bin\x64\Release\Lisan\`.
+Output: `Lisan\bin\x64\Release\`. The release zip and manifest are in `Lisan\bin\x64\Release\Lisan\`.
 
 Language packs for development can live in `Lisan\Models\<folder>` (ignored by git) or in the plugin config folder (`%AppData%\XIVLauncher\pluginConfigs\Lisan\Models`), which is where the in-game Setup tab puts them.
 
@@ -33,25 +26,22 @@ Lisan/
 ├── Services/
 │   ├── AddonDialogueWatcher.cs   # reads Talk/BattleTalk/… text nodes, writes translations back
 │   ├── LocalTranslator.cs        # Python worker process, JSON lines over stdin/stdout
-│   ├── SetupRunner.cs            # runs setup-models.ps1 from the Setup tab
+│   ├── SetupRunner.cs            # Setup tab: pip install, Hugging Face pack + font download
 │   ├── TranslationCache.cs       # per-language cache in the config folder
 │   ├── DialogueHistory.cs        # last 250 lines, export
 │   ├── DialogueDisplay.cs        # Arabic shaping + wrapping for the overlay
 │   └── SpeechService.cs          # optional Windows Arabic TTS
 ├── Windows/                  # ConfigWindow, HistoryWindow, DialogueOverlay
 ├── Models/
-│   ├── translate_worker.py   # the translator (transformers + torch, CPU)
-│   └── setup-models.ps1      # pip + Hugging Face download + font
+│   └── translate_worker.py   # the translator (transformers + torch, CPU)
 ├── Fonts/                    # bundled Noto Naskh Arabic (+ OFL.txt)
 └── images/icon.png
 ```
 
 ## Adding a built-in language
 
-Keep three places in sync:
-
 1. `TargetLanguages.cs` → a `Lang(...)` row: code, name, Hugging Face repo, folder (last segment of the repo id), optional Opus target token (`>>xxx<<` when the model card says "a sentence initial language token is required"), font + glyph ranges if the game font cannot draw the script.
-2. `setup-models.ps1` → the `$Packs` hashtable row (repo, folder, font file + URL).
+2. New font file? Add its download URL to `FontUrls` in `Services/SetupRunner.cs`.
 3. `README.md` → the languages table.
 
 Check the repo exists first: `https://huggingface.co/api/models/Helsinki-NLP/<repo>` must return 200. Several `opus-mt-en-xx` pairs do not exist; multilingual models (`opus-mt-en-mul`, `opus-mt-en-sla`, …) with a target token are the fallback.

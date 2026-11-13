@@ -72,7 +72,18 @@ public sealed class SpeechService : IDisposable
         Task.Run(() =>
         {
             lock (gate)
-                EnsureSynth();
+            {
+                // SAPI is Windows-only; under Wine the synthesizer can fail to construct.
+                try
+                {
+                    EnsureSynth();
+                }
+                catch (Exception ex)
+                {
+                    Status = "TTS unavailable";
+                    Plugin.Log.Warning(ex, "TTS init failed");
+                }
+            }
         });
     }
 

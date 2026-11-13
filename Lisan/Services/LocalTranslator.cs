@@ -89,13 +89,16 @@ public sealed class LocalTranslator : IDisposable
     public string Status => status;
     public string ModelDirectory => modelDir;
 
-    public bool ModelPresent =>
-        Directory.Exists(modelDir) &&
-        File.Exists(Path.Combine(modelDir, "config.json")) &&
-        (File.Exists(Path.Combine(modelDir, "pytorch_model.bin")) ||
-         File.Exists(Path.Combine(modelDir, "model.safetensors")) ||
-         Directory.GetFiles(modelDir, "*.bin").Length > 0 ||
-         Directory.GetFiles(modelDir, "*.safetensors").Length > 0);
+    public bool ModelPresent => HasModel(modelDir);
+
+    /// <summary>config.json plus one set of weights.</summary>
+    public static bool HasModel(string dir) =>
+        Directory.Exists(dir) &&
+        File.Exists(Path.Combine(dir, "config.json")) &&
+        (File.Exists(Path.Combine(dir, "pytorch_model.bin")) ||
+         File.Exists(Path.Combine(dir, "model.safetensors")) ||
+         Directory.GetFiles(dir, "*.bin").Length > 0 ||
+         Directory.GetFiles(dir, "*.safetensors").Length > 0);
 
     public void EnsureStarted()
     {

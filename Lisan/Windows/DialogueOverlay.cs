@@ -165,10 +165,13 @@ public sealed class DialogueOverlay : Window, IDisposable
         ImGui.SetWindowFontScale(scale);
 
         var maxChars = DialogueDisplay.EstimateMaxChars(wrapW, fontPx);
-        // Talk and BattleTalk sit on the light parchment bubble. Dark panels keep the configured color.
-        var textCol = line.Source is "Talk" or "BattleTalk"
-            ? new Vector4(0f, 0f, 0f, 1f)
-            : cfg.BalloonTextColor;
+        // Talk and BattleTalk balloons come in cream and dark styles: follow the game's own text color.
+        // Black is the fallback for the common cream bubble. Other panels keep the configured color.
+        var textCol = cfg.BalloonTextColor;
+        if (line.Source is "Talk" or "BattleTalk")
+            textCol = AddonDialogueWatcher.TryGetBodyTextColor(line.Source, line.BodyNodeId, out var gameCol)
+                ? gameCol
+                : new Vector4(0f, 0f, 0f, 1f);
         if (line.Busy)
             textCol = new Vector4(textCol.X * 0.72f, textCol.Y * 0.72f, textCol.Z * 0.72f, textCol.W * 0.88f);
 

@@ -2,6 +2,20 @@
 
 All notable changes to Lisan. Versions follow `<Version>` in `Lisan/Lisan.csproj`; each release is tagged `vX.Y.Z`.
 
+## 1.0.1 — 2026-11-10
+
+### Changed
+- Relicensed from MIT to **AGPL-3.0-or-later**, matching Dalamud.
+- The Setup tab no longer runs a PowerShell script: pip, the Hugging Face pack download and the font download now run from the plugin itself, so setup has no Windows-only dependency. Custom repo ids are validated, and downloads go to `.part` files first so an interrupted download is never mistaken for a finished pack.
+- Optional TTS logs a warning instead of failing silently when Windows speech is unavailable (e.g. under Wine).
+
+### Fixed
+- Overlay text on dark Talk/BattleTalk balloons was black on black; it now uses the game's own text color for the balloon.
+- `pluginmaster.json` was written as a nested array, so Dalamud could not read the custom repo.
+
+### Removed
+- `Install-Lisan.ps1` / `Install-Lisan.cmd` and `Models/setup-models.ps1`. Install Lisan from the plugin installer only.
+
 ## 1.0.0 — 2026-11-07
 
 First public release.

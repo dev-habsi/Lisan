@@ -1,6 +1,6 @@
 # Third-party notices
 
-Lisan itself is MIT licensed (see [LICENSE](LICENSE)). It bundles or downloads the following components.
+Lisan itself is licensed under the GNU AGPL v3.0 or later (see [LICENSE](LICENSE)). It bundles or downloads the following components.
 
 ## Bundled in the plugin zip
 
@@ -12,7 +12,7 @@ Lisan itself is MIT licensed (see [LICENSE](LICENSE)). It bundles or downloads t
 
 Dalamud, FFXIVClientStructs and ImGui bindings are provided by the Dalamud runtime and are not redistributed here.
 
-## Downloaded on the user's machine by the Setup tab / `setup-models.ps1`
+## Downloaded on the user's machine by the Setup tab
 
 | Component | License | Source |
 |-----------|---------|--------|

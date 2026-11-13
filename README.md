@@ -4,7 +4,7 @@
 
 # Lisan
 
-[![Build](https://github.com/dev-habsi/Lisan/actions/workflows/build.yml/badge.svg)](https://github.com/dev-habsi/Lisan/actions/workflows/build.yml) [![Release](https://img.shields.io/github/v/release/dev-habsi/Lisan)](https://github.com/dev-habsi/Lisan/releases/latest) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) ![Dalamud API 15](https://img.shields.io/badge/Dalamud-API%2015-purple) ![Offline](https://img.shields.io/badge/translation-100%25%20offline-green)
+[![Build](https://github.com/dev-habsi/Lisan/actions/workflows/build.yml/badge.svg)](https://github.com/dev-habsi/Lisan/actions/workflows/build.yml) [![Release](https://img.shields.io/github/v/release/dev-habsi/Lisan)](https://github.com/dev-habsi/Lisan/releases/latest) [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE) ![Dalamud API 15](https://img.shields.io/badge/Dalamud-API%2015-purple) ![Offline](https://img.shields.io/badge/translation-100%25%20offline-green)
 
 **Lisan** (لسان: tongue, language) is a [Dalamud](https://github.com/goatcorp/Dalamud) plugin for Final Fantasy XIV that translates NPC dialogue from English into your language, **offline, on your own PC**. Talk balloons, battle talk, cutscene subtitles, dialogue choices and Yes/No prompts are rewritten in place. Default language is Arabic; 26 languages are built in and any Hugging Face Opus-MT model can be used.
 
@@ -12,10 +12,10 @@ Made with love at [habsi.net](https://habsi.net).
 
 | | |
 |---|---|
-| **Version** | 1.0.0 |
+| **Version** | 1.0.1 |
 | **Dalamud** | API 15 (.NET 10) |
-| **Platform** | Windows (Python worker + Windows TTS) |
-| **License** | MIT (models and fonts have their own licenses, see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)) |
+| **Platform** | Windows. Setup has no Windows-only scripts; on Linux (Wine) the translator needs a Windows Python inside the Wine prefix (untested). Optional TTS is Windows-only. |
+| **License** | AGPL-3.0-or-later (models and fonts have their own licenses, see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)) |
 
 ---
 
@@ -149,13 +149,13 @@ Logs: `/xllog` in game, or `%AppData%\XIVLauncher\dalamud.log`. Enable *Log each
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Short version:
 
-```powershell
+```
 git clone https://github.com/dev-habsi/Lisan.git
-cd Lisan
-.\Install-Lisan.ps1        # or: cd Lisan; dotnet build -c Release -p:Platform=x64
+cd Lisan/Lisan
+dotnet build -c Release -p:Platform=x64
 ```
 
-Dev plugin path: `Lisan\bin\x64\Release`. Releases are cut by tagging `vX.Y.Z`; the GitHub Actions workflow builds the zip and updates `pluginmaster.json`.
+Releases are cut by tagging `vX.Y.Z`; the GitHub Actions workflow builds the zip and updates `pluginmaster.json`.
 
 ## Credits
 

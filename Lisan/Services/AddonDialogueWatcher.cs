@@ -823,6 +823,28 @@ public sealed class AddonDialogueWatcher : IDisposable
         return size.X >= 40f && size.Y >= 24f;
     }
 
+    /// <summary>The game's own color for the body text: dark on cream balloons, light on dark ones.</summary>
+    public static unsafe bool TryGetBodyTextColor(string source, uint bodyNodeId, out Vector4 color)
+    {
+        color = default;
+        var map = MapSource(source);
+        if (map is null)
+            return false;
+
+        var addonPtr = Plugin.GameGui.GetAddonByName(map.Value.Addon);
+        if (addonPtr.Address == nint.Zero)
+            return false;
+
+        var node = ((AtkUnitBase*)addonPtr.Address)->GetTextNodeById(bodyNodeId != 0 ? bodyNodeId : map.Value.BodyNodeId);
+        if (node is null)
+            return false;
+
+        // TextColor, not Color: Color.A is what HideBodyText zeroes.
+        var c = node->TextColor;
+        color = new Vector4(c.R / 255f, c.G / 255f, c.B / 255f, 1f);
+        return true;
+    }
+
     private static unsafe Vector2 GetNodeScale(AtkResNode* node)
     {
         var scale = new Vector2(node->ScaleX, node->ScaleY);

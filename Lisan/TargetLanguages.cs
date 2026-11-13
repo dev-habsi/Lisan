@@ -4,7 +4,7 @@ namespace Lisan;
 
 /// <summary>
 /// Built-in English→X language packs (Helsinki-NLP Opus-MT on disk).
-/// Pick one in config, then download it on the Setup tab (or run Models\setup-models.ps1 -Language &lt;code&gt;).
+/// Pick one in config, then download it on the Setup tab.
 /// </summary>
 public sealed class TargetLanguageInfo
 {
