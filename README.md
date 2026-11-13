@@ -32,6 +32,11 @@ You need: FFXIV via **XIVLauncher** with Dalamud, **Python 3.10 or newer** on PA
 
 3. **Plugin Installer → search "Lisan" → Install.**
 4. The Lisan window opens on its **Setup** tab (or type `/lisan config`). Pick your language, click **Download … pack + Python packages**, wait for *Done* (PyTorch is ~200 MB, a pack ~300 MB; a few minutes on a normal connection). The translator restarts by itself.
+
+   <p align="center">
+     <img src="docs/screenshots/setup.png" width="640" alt="Lisan Setup tab: Python found, Arabic pack ready, overlay font ready">
+     <br><sub>The Setup tab when everything is ready.</sub>
+   </p>
 5. Keep the **game client language on English** (that is the source text). Talk to an NPC. The first line after a game start takes 10–30 s while the model loads; after that lines are near-instant and repeated lines come from cache.
 
 That is all. Packs are stored in `%AppData%\XIVLauncher\pluginConfigs\Lisan\Models` and survive plugin updates.
@@ -74,6 +79,11 @@ That is all. Packs are stored in `%AppData%\XIVLauncher\pluginConfigs\Lisan\Mode
 
 All models are by [Helsinki-NLP](https://huggingface.co/Helsinki-NLP). Target tokens in parentheses are sent automatically. Persian and Thai use the multilingual `en-mul` model, which is noticeably weaker than a dedicated pair.
 
+<p align="center">
+  <img src="docs/screenshots/languages.png" width="460" alt="Language picker listing the 26 built-in languages and Custom model folder">
+  <br><sub>Pick a language on the Setup or General tab.</sub>
+</p>
+
 **Custom model:** General → Target language → *Custom model folder*, then on the Setup tab enter a repo id such as `Helsinki-NLP/opus-mt-en-fr` and download. If the model card says a `>>xxx<<` token is required, put it in General → Custom pack → Opus token; tick *Right-to-left* for RTL scripts.
 
 Translation quality is machine translation (Marian / Opus-MT, CPU). It is good for everyday dialogue and weaker on lore names and poetry.
@@ -102,6 +112,11 @@ Hotkeys (on by default, General tab): **Ctrl+Alt+C** copy, **Ctrl+Alt+H** histor
 - **General**: enable, target language, which dialogue types to translate, history / auto-copy / hotkeys, balloon font size and text color.
 - **Translator**: worker status and model path, fast (greedy) vs. 2-beam decoding, warm-up on load, optional **Arabic Windows TTS** (needs a Desktop Arabic voice such as Microsoft Huma or Naayf), custom model folder, clear cache, restart worker.
 - **Debug**: log each translation to the Dalamud log, live view of the current line.
+
+<p align="center">
+  <img src="docs/screenshots/general.png" width="640" alt="Lisan General tab: enable plugin, target language, dialogue types, history and hotkeys">
+  <br><sub>The General tab.</sub>
+</p>
 
 ---
 

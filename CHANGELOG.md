@@ -2,6 +2,15 @@
 
 All notable changes to Lisan. Versions follow `<Version>` in `Lisan/Lisan.csproj`; each release is tagged `vX.Y.Z`.
 
+## Unreleased
+
+### Fixed
+- The first translation after each worker start failed with `Unexpected UTF-8 BOM`: the plugin now writes to the worker without a BOM.
+- TTS setup steps showed `=======` instead of the Arabic language name (the UI font has no Arabic glyphs).
+
+### Docs
+- README screenshots of the Setup tab, language picker and General tab.
+
 ## 1.0.1 — 2026-11-10
 
 ### Changed
