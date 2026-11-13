@@ -327,7 +327,8 @@ public sealed class ConfigWindow : Window
             ImGui.Spacing();
             ImGui.TextWrapped("Windows has no Arabic Desktop TTS voice that Lisan can use. Install one:");
             ImGui.BulletText("Settings → Time & language → Language & region");
-            ImGui.BulletText("Add Arabic (e.g. العربية — Saudi Arabia) if it is not there");
+            // English only: the Dalamud UI font has no Arabic glyphs.
+            ImGui.BulletText("Add Arabic (e.g. Arabic (Saudi Arabia)) if it is not there");
             ImGui.BulletText("Click Arabic → Language options → Speech → Download");
             ImGui.BulletText("Also: Time & language → Speech → Add voices → Arabic");
             ImGui.BulletText("Pick a Desktop voice (Microsoft Huma / Naayf), not only Natural");

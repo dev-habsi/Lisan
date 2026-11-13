@@ -214,7 +214,8 @@ public sealed class LocalTranslator : IDisposable
             RedirectStandardError = true,
             CreateNoWindow = true,
             StandardOutputEncoding = Encoding.UTF8,
-            StandardInputEncoding = Encoding.UTF8,
+            // No BOM: Encoding.UTF8 writes one on the first line and the worker's json.loads rejects it.
+            StandardInputEncoding = new UTF8Encoding(false),
             StandardErrorEncoding = Encoding.UTF8,
         };
         psi.Environment["PYTHONIOENCODING"] = "utf-8";
