@@ -50,7 +50,8 @@ jobs:
           $m | Add-Member -NotePropertyName DownloadCount -NotePropertyValue 0 -Force
           $m | Add-Member -NotePropertyName IsHide -NotePropertyValue $false -Force
           $m | Add-Member -NotePropertyName IsTestingExclusive -NotePropertyValue $false -Force
-          $json = ConvertTo-Json -InputObject @($m) -AsArray -Depth 10
+          # -AsArray on a single object only: @($m) plus -AsArray nests the array, which Dalamud rejects.
+          $json = ConvertTo-Json -InputObject $m -AsArray -Depth 10
           [System.IO.File]::WriteAllText("pluginmaster.json", $json + "`n", [System.Text.UTF8Encoding]::new($false))
           Get-Content pluginmaster.json
 
