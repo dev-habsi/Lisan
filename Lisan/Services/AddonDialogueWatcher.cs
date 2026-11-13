@@ -12,6 +12,8 @@ using Dalamud.Interface.Utility;
 using Dalamud.Memory;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using Lumina.Text.Payloads;
+using Lumina.Text.ReadOnly;
 
 namespace Lisan.Services;
 
@@ -842,7 +844,39 @@ public sealed class AddonDialogueWatcher : IDisposable
         // TextColor, not Color: Color.A is what HideBodyText zeroes.
         var c = node->TextColor;
         color = new Vector4(c.R / 255f, c.G / 255f, c.B / 255f, 1f);
+
+        // Some balloon styles (e.g. the blue machine one) color the line with a <color> macro; TextColor is then the dark default.
+        var macro = TryGetMacroColor(node, out var macroColor);
+        if (macro)
+            color = macroColor;
+
+        var sig = $"{source} text={c.R:X2}{c.G:X2}{c.B:X2} edge={node->EdgeColor.R:X2}{node->EdgeColor.G:X2}{node->EdgeColor.B:X2} macro={(macro ? macroColor.ToString() : "none")}";
+        if (loggedColorStyles.Add(sig))
+            Plugin.Log.Information($"Lisan balloon color: {sig}");
         return true;
+    }
+
+    private static readonly HashSet<string> loggedColorStyles = [];
+
+    private static unsafe bool TryGetMacroColor(AtkTextNode* node, out Vector4 color)
+    {
+        color = default;
+        var ptr = node->NodeText.StringPtr.Value;
+        if (ptr == null)
+            return false;
+
+        foreach (var p in new ReadOnlySeStringSpan(ptr))
+        {
+            // Value is 0xAARRGGBB; <color(stackcolor)> has no uint and is skipped.
+            if (p.Type == ReadOnlySePayloadType.Macro && p.MacroCode == MacroCode.Color
+                && p.TryGetExpression(out var e) && e.TryGetUInt(out var argb) && argb != 0)
+            {
+                color = new Vector4(((argb >> 16) & 0xFF) / 255f, ((argb >> 8) & 0xFF) / 255f, (argb & 0xFF) / 255f, 1f);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static unsafe Vector2 GetNodeScale(AtkResNode* node)
